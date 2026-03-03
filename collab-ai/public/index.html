@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hybrid Search Chatbot</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <h1>Hybrid Search Chatbot</h1>
+      <p>Local webpage -> Supabase Edge Function -> OpenAI response</p>
+    </header>
+
+    <section class="card">
+      <div id="status" class="status">Set your Supabase values in <code>public/config.js</code>.</div>
+      <ul id="messages" class="messages"></ul>
+
+      <form id="chat-form" class="chat-form">
+        <input id="prompt" type="text" placeholder="Ask something..." required />
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <section class="card sources-card">
+      <h2>Retrieved Context</h2>
+      <ul id="sources" class="sources"></ul>
+    </section>
+  </main>
+
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

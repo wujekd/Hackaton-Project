@@ -1,0 +1,16 @@
+{
+  "name": "supabase-hybrid-chatbot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "index:docs": "node scripts/index-documents.js data/documents.json"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "openai": "^4.104.0"
+  }
+}
