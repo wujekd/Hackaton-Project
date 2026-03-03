@@ -160,6 +160,7 @@ export default function Home() {
 
             {upcoming.map((ev, index) => (
               <div
+                className="home-upcoming-event"
                 key={ev.id}
                 style={{
                   marginBottom: index === upcoming.length - 1 ? 0 : 12,
@@ -168,22 +169,22 @@ export default function Home() {
                 }}
               >
                 <div className="event-date">{formatDateShort(ev.date)}</div>
-                <div style={{ fontWeight: 600, fontSize: 13, margin: "3px 0 2px" }}>{ev.name}</div>
+                <div className="home-upcoming-event-title">{ev.name}</div>
                 {ev.description && (
-                  <div style={{ color: "var(--muted)", fontSize: 11.5, lineHeight: 1.45 }}>
+                  <div className="home-upcoming-event-desc">
                     {ev.description}
                   </div>
                 )}
               </div>
             ))}
-            <div style={{ marginTop: 10 }}>
+            <div className="home-upcoming-footer">
               <Link className="btn-sm outline" to="/events">
                 Browse all events
               </Link>
             </div>
           </div>
 
-          <div className="sec-head" style={{ marginTop: 6 }}>
+          <div className="sec-head home-suggest-head">
             <span className="bar" />
             Suggested Connections
           </div>
@@ -195,7 +196,7 @@ export default function Home() {
             ].map((person) => (
               <div
                 key={person.name}
-                style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}
+                className="home-suggestion-row"
               >
                 <div className={`avatar ${person.tone}`} style={{ width: 28, height: 28, fontSize: 9 }}>
                   {person.initials}

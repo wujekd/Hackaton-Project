@@ -33,12 +33,12 @@ export default function Discover() {
         </div>
       </div>
 
-      <div style={{ padding: 26 }}>
+      <div className="discover-content">
         <div className="sec-head">
           <span className="bar" />
           Browse by Interest
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 26 }}>
+        <div className="discover-tags">
           {tags.map((tag) => (
             <button
               className={`filter-pill ${activeTag === tag ? "active" : ""}`}

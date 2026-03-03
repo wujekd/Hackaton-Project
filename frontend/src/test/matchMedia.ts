@@ -1,5 +1,3 @@
-import "@testing-library/jest-dom/vitest";
-
 function queryMatchesWidth(query: string, width: number): boolean {
   const min = /min-width:\s*(\d+)px/.exec(query);
   const max = /max-width:\s*(\d+)px/.exec(query);
@@ -14,10 +12,9 @@ function queryMatchesWidth(query: string, width: number): boolean {
   return matches;
 }
 
-Object.defineProperty(window, "matchMedia", {
-  writable: true,
-  value: vi.fn().mockImplementation((query: string) => ({
-    matches: queryMatchesWidth(query, 1280),
+export function mockViewportWidth(width: number): void {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: queryMatchesWidth(query, width),
     media: query,
     onchange: null,
     addEventListener: vi.fn(),
@@ -25,5 +22,5 @@ Object.defineProperty(window, "matchMedia", {
     addListener: vi.fn(),
     removeListener: vi.fn(),
     dispatchEvent: vi.fn(),
-  })),
-});
+  }));
+}

@@ -53,6 +53,11 @@ const router = createBrowserRouter([
         handle: { title: "Messages", breadcrumb: "Messages" } satisfies RouteHandle,
       },
       {
+        path: "messages/:conversationId",
+        element: <Messages />,
+        handle: { title: "Messages", breadcrumb: "Messages" } satisfies RouteHandle,
+      },
+      {
         path: "discover",
         element: <Discover />,
         handle: { title: "Discover", breadcrumb: "Discover" } satisfies RouteHandle,
