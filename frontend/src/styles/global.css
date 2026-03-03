@@ -654,6 +654,34 @@ select {
   gap: 5px;
 }
 
+.poll-live-option {
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: inherit;
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.poll-live-option:hover:not(:disabled) {
+  border-color: var(--border2);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.poll-live-option.selected {
+  border-color: rgba(212, 0, 42, 0.55);
+  background: rgba(212, 0, 42, 0.1);
+}
+
+.poll-live-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
 .poll-placeholder-option-row {
   display: flex;
   align-items: center;
@@ -676,6 +704,15 @@ select {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #ff9c7d 0%, #d4002a 100%);
+}
+
+.poll-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11.5px;
 }
 
 .sec-head {
@@ -731,6 +768,28 @@ select {
 .collab-author {
   flex: 1;
   min-width: 0;
+}
+
+.collab-author-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 1px;
+}
+
+.collab-author-row .collab-author-name {
+  margin-bottom: 0;
+}
+
+.collab-author-badge {
+  border: 1px solid var(--red-mid);
+  background: var(--red-dim);
+  color: var(--red);
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
 .collab-author-name {
@@ -1056,6 +1115,10 @@ select {
   gap: 10px;
 }
 
+.detail-grid-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .detail-card {
   border: 1px solid var(--border);
   background: var(--card);
@@ -1103,6 +1166,14 @@ select {
 
 .detail-actions .btn-sm {
   text-align: center;
+}
+
+.collab-message-author-cta {
+  width: 100%;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .detail-file-list {

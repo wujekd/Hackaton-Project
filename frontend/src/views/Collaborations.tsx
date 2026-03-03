@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CollaborationService } from "../services/collaboration.service";
+import { useAuthStore } from "../stores/auth.store";
 import type { Collaboration } from "../types/collaboration";
 import { formatRelativeDate } from "../utils/date";
 
@@ -26,6 +27,7 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
 
 export default function Collaborations() {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const [collabs, setCollabs] = useState<Collaboration[]>([]);
   const [activeFilter, setActiveFilter] = useState("All");
   const [loading, setLoading] = useState(true);
@@ -159,15 +161,17 @@ export default function Collaborations() {
 
               <div className="collab-actions">
                 <Link className="btn-sm accent" to={`/collaborations/${collab.id}`}>Open</Link>
-                <Link
-                  className="btn-sm outline"
-                  to={
-                    `/messages?userId=${encodeURIComponent(collab.authorId)}` +
-                    `&userName=${encodeURIComponent(collab.authorName)}`
-                  }
-                >
-                  💬 Message {collab.authorName.split(/\s+/)[0]}
-                </Link>
+                {user?.uid !== collab.authorId && (
+                  <Link
+                    className="btn-sm outline"
+                    to={
+                      `/messages?userId=${encodeURIComponent(collab.authorId)}` +
+                      `&userName=${encodeURIComponent(collab.authorName)}`
+                    }
+                  >
+                    💬 Message {collab.authorName.split(/\s+/)[0]}
+                  </Link>
+                )}
               </div>
             </article>
           ))}

@@ -285,6 +285,11 @@ export default function Messages() {
 
   useEffect(() => {
     if (!user || !targetUserId) return;
+    if (targetUserId === user.uid) {
+      setDeepLinkError("You can't message yourself.");
+      navigate("/messages", { replace: true });
+      return;
+    }
 
     const identity = {
       uid: user.uid,

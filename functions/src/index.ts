@@ -29,15 +29,34 @@ type EventCard = {
   date: string | null;
 };
 
+type PollOption = {
+  id: string;
+  label: string;
+  votes: number;
+};
+
+type PollPlaceholderSummary = {
+  status: "placeholder";
+  title: string;
+  description: string;
+};
+
+type PollLiveSummary = {
+  status: "live";
+  pollId: string;
+  title: string;
+  options: PollOption[];
+  totalVotes: number;
+  allowVoteChange: boolean;
+};
+
+type PollSummary = PollPlaceholderSummary | PollLiveSummary;
+
 type FeedPayload = {
   generatedAt: string;
   collaborations: CollaborationCard[];
   events: EventCard[];
-  polls: {
-    status: "placeholder";
-    title: string;
-    description: string;
-  };
+  polls: PollSummary;
 };
 
 type SendMessagePayload = {
@@ -59,6 +78,25 @@ type DeleteEventPayload = {
   eventId?: unknown;
 };
 
+type CreatePollPayload = {
+  title?: unknown;
+  options?: unknown;
+  allowVoteChange?: unknown;
+};
+
+type PublishPollPayload = {
+  pollId?: unknown;
+};
+
+type ClosePollPayload = {
+  pollId?: unknown;
+};
+
+type CastPollVotePayload = {
+  pollId?: unknown;
+  optionId?: unknown;
+};
+
 type ConversationDoc = {
   participantIds?: unknown;
 };
@@ -66,6 +104,17 @@ type ConversationDoc = {
 type UserDoc = {
   username?: unknown;
   email?: unknown;
+};
+
+type PollDoc = {
+  title?: unknown;
+  status?: unknown;
+  active?: unknown;
+  options?: unknown;
+  totalVotes?: unknown;
+  allowVoteChange?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 };
 
 const toIso = (value: unknown): string | null => {
@@ -133,6 +182,107 @@ const buildDirectConversationId = (uidA: string, uidB: string): string => {
   return `direct_${sorted[0]}_${sorted[1]}`;
 };
 
+const POLLS_COLLECTION = "polls";
+const POLL_VOTES_SUBCOLLECTION = "votes";
+const POLL_PLACEHOLDER_TITLE = "Polls are coming soon";
+const POLL_PLACEHOLDER_DESCRIPTION =
+  "This section is reserved for live poll results.";
+
+const buildPlaceholderPoll = (): PollPlaceholderSummary => ({
+  status: "placeholder",
+  title: POLL_PLACEHOLDER_TITLE,
+  description: POLL_PLACEHOLDER_DESCRIPTION,
+});
+
+const normalizePollStatus = (value: unknown): "draft" | "live" | "closed" => {
+  if (value === "live" || value === "closed") return value;
+  return "draft";
+};
+
+const asPollOptionLabels = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    throw new HttpsError("invalid-argument", "options must be an array.");
+  }
+
+  const normalized = value
+    .map((option) => asOptionalString(option, 120))
+    .filter((option) => !!option);
+
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  normalized.forEach((option) => {
+    const dedupeKey = option.toLowerCase();
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    unique.push(option);
+  });
+
+  if (unique.length < 2) {
+    throw new HttpsError(
+      "invalid-argument",
+      "At least two unique options are required.",
+    );
+  }
+  if (unique.length > 8) {
+    throw new HttpsError(
+      "invalid-argument",
+      "A poll can contain at most eight options.",
+    );
+  }
+
+  return unique;
+};
+
+const parsePollOptions = (value: unknown): PollOption[] => {
+  if (!Array.isArray(value)) return [];
+
+  const parsed: PollOption[] = [];
+  value.forEach((entry, index) => {
+    if (typeof entry !== "object" || entry === null) {
+      return;
+    }
+    const candidate = entry as Record<string, unknown>;
+    const id = asOptionalString(candidate.id, 80) || `opt_${index + 1}`;
+    const label =
+      asOptionalString(candidate.label, 120) || `Option ${index + 1}`;
+    const rawVotes = candidate.votes;
+    const votes = typeof rawVotes === "number" && Number.isFinite(rawVotes) ?
+      Math.max(0, Math.floor(rawVotes)) :
+      0;
+    parsed.push({id, label, votes});
+  });
+
+  return parsed;
+};
+
+const computeTotalVotes = (options: PollOption[]): number =>
+  options.reduce((sum, option) => sum + option.votes, 0);
+
+const parsePollSummary = (
+  pollId: string,
+  data: PollDoc,
+): PollLiveSummary | null => {
+  const status = normalizePollStatus(data.status);
+  if (status !== "live") return null;
+
+  const options = parsePollOptions(data.options);
+  if (options.length === 0) return null;
+
+  const totalVotes = typeof data.totalVotes === "number" &&
+    Number.isFinite(data.totalVotes) ?
+    Math.max(0, Math.floor(data.totalVotes)) :
+    computeTotalVotes(options);
+
+  return {
+    status: "live",
+    pollId,
+    title: asOptionalString(data.title, 180) || "Campus Poll",
+    options,
+    totalVotes,
+    allowVoteChange: data.allowVoteChange === true,
+  };
+};
+
 const assertAdmin = async (uid: string): Promise<void> => {
   const userSnap = await db.collection("users").doc(uid).get();
   const isUserAdmin = userSnap.exists && userSnap.get("admin") === true;
@@ -159,6 +309,21 @@ const pickUsername = (
   if (trimmedFallbackEmail) return trimmedFallbackEmail;
 
   return "Unknown user";
+};
+
+const getActivePollSummary = async (): Promise<PollSummary> => {
+  const snapshot = await db
+    .collection(POLLS_COLLECTION)
+    .where("status", "==", "live")
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return buildPlaceholderPoll();
+
+  const liveDoc = snapshot.docs[0];
+  const summary = parsePollSummary(liveDoc.id, liveDoc.data() as PollDoc);
+  if (!summary) return buildPlaceholderPoll();
+  return summary;
 };
 
 const getCollaborations = async (): Promise<CollaborationCard[]> => {
@@ -206,20 +371,17 @@ const getEvents = async (): Promise<EventCard[]> => {
 };
 
 const buildFeed = async (): Promise<FeedPayload> => {
-  const [collaborations, events] = await Promise.all([
+  const [collaborations, events, polls] = await Promise.all([
     getCollaborations(),
     getEvents(),
+    getActivePollSummary(),
   ]);
 
   return {
     generatedAt: new Date().toISOString(),
     collaborations,
     events,
-    polls: {
-      status: "placeholder",
-      title: "Polls are coming soon",
-      description: "This section is reserved for live poll results.",
-    },
+    polls,
   };
 };
 
@@ -253,13 +415,392 @@ export const infoScreenFeed = onRequest({
       generatedAt: new Date().toISOString(),
       collaborations: [],
       events: [],
-      polls: {
-        status: "placeholder",
-        title: "Polls are coming soon",
-        description: "This section is reserved for live poll results.",
-      },
+      polls: buildPlaceholderPoll(),
     });
   }
+});
+
+export const createPoll = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  await assertAdmin(uid);
+
+  const data = request.data as CreatePollPayload;
+  const title = asNonEmptyString(data.title, "title", 180);
+  const labels = asPollOptionLabels(data.options);
+  const allowVoteChange = data.allowVoteChange === true;
+  const options = labels.map((label, index) => ({
+    id: `opt_${index + 1}`,
+    label,
+    votes: 0,
+  }));
+
+  const pollRef = db.collection(POLLS_COLLECTION).doc();
+  await pollRef.set({
+    title,
+    status: "draft",
+    active: false,
+    allowVoteChange,
+    options,
+    totalVotes: 0,
+    createdBy: uid,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+    publishedAt: null,
+    closedAt: null,
+  });
+
+  return {
+    status: "ok",
+    pollId: pollRef.id,
+  };
+});
+
+export const listPolls = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  await assertAdmin(uid);
+
+  const snapshot = await db
+    .collection(POLLS_COLLECTION)
+    .orderBy("updatedAt", "desc")
+    .limit(30)
+    .get();
+
+  return {
+    status: "ok",
+    polls: snapshot.docs.map((doc) => {
+      const data = doc.data() as PollDoc;
+      const options = parsePollOptions(data.options);
+      return {
+        pollId: doc.id,
+        title: asOptionalString(data.title, 180) || "Untitled poll",
+        status: normalizePollStatus(data.status),
+        active: data.active === true,
+        allowVoteChange: data.allowVoteChange === true,
+        options,
+        totalVotes: typeof data.totalVotes === "number" &&
+          Number.isFinite(data.totalVotes) ?
+          Math.max(0, Math.floor(data.totalVotes)) :
+          computeTotalVotes(options),
+        createdAt: toIso(data.createdAt),
+        updatedAt: toIso(data.updatedAt),
+      };
+    }),
+  };
+});
+
+export const publishPoll = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  await assertAdmin(uid);
+
+  const data = request.data as PublishPollPayload;
+  const pollId = asNonEmptyString(data.pollId, "pollId", 180);
+  const pollRef = db.collection(POLLS_COLLECTION).doc(pollId);
+
+  const livePolls = await db
+    .collection(POLLS_COLLECTION)
+    .where("status", "==", "live")
+    .limit(5)
+    .get();
+  const conflicting = livePolls.docs.find((doc) => doc.id !== pollId);
+  if (conflicting) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Another poll is already live. Close it before publishing a new poll.",
+    );
+  }
+
+  await db.runTransaction(async (tx) => {
+    const pollSnap = await tx.get(pollRef);
+    if (!pollSnap.exists) {
+      throw new HttpsError("not-found", "Poll not found.");
+    }
+
+    const pollData = pollSnap.data() as PollDoc;
+    const status = normalizePollStatus(pollData.status);
+    const options = parsePollOptions(pollData.options);
+    if (options.length < 2) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Poll must contain at least two options before publishing.",
+      );
+    }
+    if (status === "live") {
+      tx.update(pollRef, {
+        active: true,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+    if (status !== "draft" && status !== "closed") {
+      throw new HttpsError(
+        "failed-precondition",
+        "Only draft or closed polls can be published.",
+      );
+    }
+
+    tx.update(pollRef, {
+      status: "live",
+      active: true,
+      publishedAt: FieldValue.serverTimestamp(),
+      closedAt: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+
+  return {
+    status: "ok",
+    pollId,
+  };
+});
+
+export const closePoll = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  await assertAdmin(uid);
+
+  const data = request.data as ClosePollPayload;
+  const pollId = asNonEmptyString(data.pollId, "pollId", 180);
+  const pollRef = db.collection(POLLS_COLLECTION).doc(pollId);
+
+  await db.runTransaction(async (tx) => {
+    const pollSnap = await tx.get(pollRef);
+    if (!pollSnap.exists) {
+      throw new HttpsError("not-found", "Poll not found.");
+    }
+
+    const pollData = pollSnap.data() as PollDoc;
+    const status = normalizePollStatus(pollData.status);
+    if (status === "closed") return;
+
+    tx.update(pollRef, {
+      status: "closed",
+      active: false,
+      closedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+
+  return {
+    status: "ok",
+    pollId,
+  };
+});
+
+export const getActivePoll = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const summary = await getActivePollSummary();
+  if (summary.status === "placeholder") {
+    return summary;
+  }
+
+  const uid = request.auth?.uid;
+  if (!uid) {
+    return {
+      ...summary,
+      userVoteOptionId: null,
+    };
+  }
+
+  const voteSnap = await db
+    .collection(POLLS_COLLECTION)
+    .doc(summary.pollId)
+    .collection(POLL_VOTES_SUBCOLLECTION)
+    .doc(uid)
+    .get();
+
+  const userVoteOptionId = voteSnap.exists ?
+    asOptionalString(voteSnap.get("optionId"), 80) || null :
+    null;
+
+  return {
+    ...summary,
+    userVoteOptionId,
+  };
+});
+
+export const castPollVote = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+
+  const data = request.data as CastPollVotePayload;
+  const pollId = asNonEmptyString(data.pollId, "pollId", 180);
+  const optionId = asNonEmptyString(data.optionId, "optionId", 80);
+
+  const pollRef = db.collection(POLLS_COLLECTION).doc(pollId);
+  const voteRef = pollRef.collection(POLL_VOTES_SUBCOLLECTION).doc(uid);
+
+  let result:
+    | {
+      status: "ok";
+      pollId: string;
+      selectedOptionId: string;
+      totalVotes: number;
+      options: PollOption[];
+    }
+    | null = null;
+
+  await db.runTransaction(async (tx) => {
+    const pollSnap = await tx.get(pollRef);
+    if (!pollSnap.exists) {
+      throw new HttpsError("not-found", "Poll not found.");
+    }
+
+    const pollData = pollSnap.data() as PollDoc;
+    const status = normalizePollStatus(pollData.status);
+    if (status !== "live" || pollData.active !== true) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Poll is not open for voting.",
+      );
+    }
+
+    const options = parsePollOptions(pollData.options);
+    if (options.length < 2) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Poll options are not configured correctly.",
+      );
+    }
+
+    const selectedIndex = options.findIndex((option) => option.id === optionId);
+    if (selectedIndex < 0) {
+      throw new HttpsError("invalid-argument", "Selected option is invalid.");
+    }
+
+    const allowVoteChange = pollData.allowVoteChange === true;
+    const voteSnap = await tx.get(voteRef);
+    let totalVotes = typeof pollData.totalVotes === "number" &&
+      Number.isFinite(pollData.totalVotes) ?
+      Math.max(0, Math.floor(pollData.totalVotes)) :
+      computeTotalVotes(options);
+
+    if (voteSnap.exists) {
+      const previousOptionId = asOptionalString(voteSnap.get("optionId"), 80);
+      if (previousOptionId === optionId) {
+        result = {
+          status: "ok",
+          pollId,
+          selectedOptionId: optionId,
+          totalVotes,
+          options,
+        };
+        return;
+      }
+      if (!allowVoteChange) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This poll does not allow vote changes.",
+        );
+      }
+
+      const previousIndex = options.findIndex(
+        (option) => option.id === previousOptionId,
+      );
+      if (previousIndex < 0) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Previous vote option is no longer available.",
+        );
+      }
+
+      options[previousIndex] = {
+        ...options[previousIndex],
+        votes: Math.max(0, options[previousIndex].votes - 1),
+      };
+      options[selectedIndex] = {
+        ...options[selectedIndex],
+        votes: options[selectedIndex].votes + 1,
+      };
+
+      const nextTotalVotes = computeTotalVotes(options);
+      tx.update(pollRef, {
+        options,
+        totalVotes: nextTotalVotes,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      tx.set(voteRef, {
+        optionId,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      totalVotes = nextTotalVotes;
+      result = {
+        status: "ok",
+        pollId,
+        selectedOptionId: optionId,
+        totalVotes,
+        options,
+      };
+      return;
+    }
+
+    options[selectedIndex] = {
+      ...options[selectedIndex],
+      votes: options[selectedIndex].votes + 1,
+    };
+    totalVotes += 1;
+
+    tx.update(pollRef, {
+      options,
+      totalVotes,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    tx.set(voteRef, {
+      optionId,
+      votedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    result = {
+      status: "ok",
+      pollId,
+      selectedOptionId: optionId,
+      totalVotes,
+      options,
+    };
+  });
+
+  if (!result) {
+    throw new HttpsError("internal", "Unable to cast vote.");
+  }
+
+  return result;
 });
 
 export const sendMessage = onCall({
@@ -346,6 +887,12 @@ export const getOrCreateDirectConversation = onCall({
 
   const data = request.data as GetOrCreateDirectConversationPayload;
   const otherUserId = asNonEmptyString(data.otherUserId, "otherUserId", 180);
+  if (otherUserId === uid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "You cannot start a direct conversation with yourself.",
+    );
+  }
   const otherUserNameHint = asOptionalString(data.otherUserName, 80);
   const otherUserEmailHint = normalizeEmail(
     asOptionalString(data.otherUserEmail, 160),
@@ -388,9 +935,7 @@ export const getOrCreateDirectConversation = onCall({
       (otherUserSnap.data() as UserDoc) :
       undefined;
 
-    const participantIds = uid === otherUserId ?
-      [uid] :
-      [uid, otherUserId].sort();
+    const participantIds = [uid, otherUserId].sort();
 
     const unreadCountByUser: Record<string, number> = {};
     participantIds.forEach((participantId) => {

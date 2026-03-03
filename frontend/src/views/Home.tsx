@@ -6,7 +6,7 @@ import { EventService } from "../services/event.service";
 import { useAuthStore } from "../stores/auth.store";
 import type { Collaboration } from "../types/collaboration";
 import type { EventItem } from "../types/event";
-import { formatDateShort, formatRelativeDate, toDate } from "../utils/date";
+import { formatDateShort, toDate } from "../utils/date";
 
 function nameInitials(name: string): string {
   const cleaned = name.trim();
@@ -180,7 +180,7 @@ export default function Home() {
                 <div className="avatar av-red">{nameInitials(c.authorName)}</div>
                 <div className="collab-author">
                   <div className="collab-author-name">{c.authorName}</div>
-                  <div className="collab-meta">{formatRelativeDate(c.createdAt)}</div>
+                  <div className="collab-meta">Created {formatDateShort(c.createdAt)}</div>
                 </div>
                 {c.tags.length > 0 && (
                   <div className="tags">
@@ -215,12 +215,14 @@ export default function Home() {
 
               <div className="collab-actions">
                 <Link className="btn-sm accent" to={`/collaborations/${c.id}`}>Open</Link>
-                <Link
-                  className="btn-sm outline"
-                  to={`/messages?userId=${encodeURIComponent(c.authorId)}&userName=${encodeURIComponent(c.authorName)}`}
-                >
-                  Message Host
-                </Link>
+                {user?.uid !== c.authorId && (
+                  <Link
+                    className="btn-sm outline"
+                    to={`/messages?userId=${encodeURIComponent(c.authorId)}&userName=${encodeURIComponent(c.authorName)}`}
+                  >
+                    Message Host
+                  </Link>
+                )}
               </div>
             </article>
           ))}

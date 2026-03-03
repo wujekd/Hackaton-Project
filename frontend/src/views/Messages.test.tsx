@@ -100,6 +100,7 @@ function renderMessages(route: string, width: number, messagingOverrides: Messag
   return {
     ...render(<RouterProvider router={router} />),
     sendMessage,
+    ensureDirectConversation,
   };
 }
 
@@ -177,5 +178,15 @@ describe("Messages", () => {
     expect(screen.getByText("Online")).toBeInTheDocument();
     expect(screen.getByText(/Ask me anything about collaborations/)).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Ask Collab AI...")).toBeInTheDocument();
+  });
+
+  it("blocks opening a direct conversation with yourself from deep links", async () => {
+    const { ensureDirectConversation } = renderMessages(
+      "/messages?userId=user-1&userName=Alex",
+      1280,
+    );
+
+    expect(await screen.findByText("You can't message yourself.")).toBeInTheDocument();
+    expect(ensureDirectConversation).not.toHaveBeenCalled();
   });
 });

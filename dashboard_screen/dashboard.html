@@ -795,6 +795,7 @@
             ["dashboard", "current"],
             ["dashboard", "overview"]
         ];
+        const INFO_FEED_URL = "https://europe-west1-mdxnetwork.cloudfunctions.net/infoScreenFeed";
 
         const PAGE_SIZE = 4;
         const TICK = 10;
@@ -1074,6 +1075,21 @@
         }
 
         async function fetchDashboardData() {
+            try {
+                const response = await fetch(INFO_FEED_URL, { method: "GET" });
+                if (response.ok) {
+                    const payload = await response.json();
+                    return {
+                        generatedAt: payload?.generatedAt ?? new Date().toISOString(),
+                        events: Array.isArray(payload?.events) ? payload.events : [],
+                        collaborations: Array.isArray(payload?.collaborations) ? payload.collaborations : [],
+                        polls: payload?.polls ?? DEFAULT_POLL
+                    };
+                }
+            } catch (error) {
+                console.warn("Falling back to direct Firestore queries", error);
+            }
+
             const [eventsSnap, collabsSnap, dashboardDoc] = await Promise.all([
                 getDocs(query(collection(db, "events"), orderBy("date", "asc"), limit(24))),
                 getDocs(query(collection(db, "collaborations"), orderBy("createdAt", "desc"), limit(24))),

@@ -172,13 +172,21 @@ export const MessagingService = {
   },
 
   async ensureDirectConversation(
-    _currentUser: MessageSenderIdentity,
+    currentUser: MessageSenderIdentity,
     otherUserId: string,
     otherUserHint?: { username?: string; email?: string },
   ): Promise<string> {
+    const normalizedCurrentUserId = currentUser.uid.trim();
+    if (!normalizedCurrentUserId) {
+      throw new Error("Current user is required.");
+    }
+
     const normalizedOtherUserId = otherUserId.trim();
     if (!normalizedOtherUserId) {
       throw new Error("Target user is required.");
+    }
+    if (normalizedOtherUserId === normalizedCurrentUserId) {
+      throw new Error("You can't message yourself.");
     }
 
     const result = await getOrCreateDirectConversationCallable({

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CollaborationService } from "../services/collaboration.service";
+import { useAuthStore } from "../stores/auth.store";
 import type { Collaboration } from "../types/collaboration";
 import { formatDateShort, formatRelativeDate } from "../utils/date";
 
@@ -19,6 +20,7 @@ function initials(name: string): string {
 
 export default function CollaborationDetail() {
   const { collaborationId } = useParams();
+  const user = useAuthStore((state) => state.user);
   const [collaboration, setCollaboration] = useState<Collaboration | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +75,10 @@ export default function CollaborationDetail() {
             <div className="collab-header">
               <div className="avatar av-red">{initials(collaboration.authorName)}</div>
               <div className="collab-author">
-                <div className="collab-author-name">{collaboration.authorName}</div>
+                <div className="collab-author-row">
+                  <div className="collab-author-name">{collaboration.authorName}</div>
+                  <span className="collab-author-badge">Author</span>
+                </div>
                 <div className="collab-meta">{formatRelativeDate(collaboration.createdAt)}</div>
               </div>
               <div className="tags">
@@ -93,7 +98,7 @@ export default function CollaborationDetail() {
             )}
           </section>
 
-          <div className="detail-grid">
+          <div className={`detail-grid ${user?.uid === collaboration.authorId ? "detail-grid-single" : ""}`.trim()}>
             <article className="detail-card">
               <h2 className="detail-card-title">Details</h2>
               <div className="detail-item">
@@ -121,21 +126,22 @@ export default function CollaborationDetail() {
               )}
             </article>
 
-            <aside className="detail-card">
-              <h2 className="detail-card-title">Actions</h2>
-              <div className="detail-actions">
-                <button className="btn-sm accent" type="button">Request to Join</button>
-                <Link
-                  className="btn-sm outline"
-                  to={
-                    `/messages?userId=${encodeURIComponent(collaboration.authorId)}` +
-                    `&userName=${encodeURIComponent(collaboration.authorName)}`
-                  }
-                >
-                  Message Host
-                </Link>
-              </div>
-            </aside>
+            {user?.uid !== collaboration.authorId && (
+              <aside className="detail-card">
+                <h2 className="detail-card-title">Contact</h2>
+                <div className="detail-actions">
+                  <Link
+                    className="btn-sm accent collab-message-author-cta"
+                    to={
+                      `/messages?userId=${encodeURIComponent(collaboration.authorId)}` +
+                      `&userName=${encodeURIComponent(collaboration.authorName)}`
+                    }
+                  >
+                    Message Project Author
+                  </Link>
+                </div>
+              </aside>
+            )}
           </div>
         </div>
       )}

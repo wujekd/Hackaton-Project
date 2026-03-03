@@ -74,6 +74,18 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /polls/{pollId} {
+      allow read: if isAdmin() ||
+        resource.data.status == "live" ||
+        resource.data.status == "closed";
+      allow create, update, delete: if false;
+
+      match /votes/{voteId} {
+        allow read: if isAdmin() || (signedIn() && voteId == request.auth.uid);
+        allow create, update, delete: if false;
+      }
+    }
+
     match /conversations/{conversationId} {
       allow read: if isConversationParticipant();
       allow create, update, delete: if false;
