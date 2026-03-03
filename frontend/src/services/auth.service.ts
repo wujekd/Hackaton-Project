@@ -26,6 +26,7 @@ async function ensureUserDoc(user: User): Promise<UserProfile> {
     uid: user.uid,
     email: user.email ?? "",
     username: user.displayName ?? undefined,
+    description: "",
     createdAt: serverTimestamp(),
   };
 
@@ -48,6 +49,7 @@ export const AuthService = {
       uid: cred.user.uid,
       email,
       username: username ?? null,
+      description: "",
       createdAt: serverTimestamp(),
     });
     return cred;
@@ -73,5 +75,9 @@ export const AuthService = {
 
   updateInterests: async (uid: string, interests: string[]): Promise<void> => {
     await updateDoc(doc(db, "users", uid), { interests });
+  },
+
+  updateDescription: async (uid: string, description: string): Promise<void> => {
+    await updateDoc(doc(db, "users", uid), { description });
   },
 };

@@ -5,6 +5,7 @@ export interface UserProfile {
   email: string;
   username?: string;
   interests?: string[];
+  description?: string;
   admin?: boolean;
   createdAt: Timestamp;
 }

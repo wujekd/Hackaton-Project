@@ -166,10 +166,8 @@ export default function Collaborations() {
                     `&userName=${encodeURIComponent(collab.authorName)}`
                   }
                 >
-                  Message Host
+                  💬 Message {collab.authorName.split(/\s+/)[0]}
                 </Link>
-                <button className="btn-sm ghost" type="button">Invite</button>
-                <span className="collab-likes">{Math.max(8, collab.tags.length * 5)} likes</span>
               </div>
             </article>
           ))}

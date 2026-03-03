@@ -9,6 +9,7 @@ import type { EventProposal } from "../types/event";
 import { formatDateShort, toDate } from "../utils/date";
 
 type AccountTab = "profile" | "activity";
+const MAX_PROFILE_DESCRIPTION = 220;
 
 function maskEmail(email: string): string {
   const at = email.indexOf("@");
@@ -18,7 +19,7 @@ function maskEmail(email: string): string {
 
 export default function MyAccount() {
   const navigate = useNavigate();
-  const { user, profile, updateProfileInterests } = useAuthStore();
+  const { user, profile, updateProfileInterests, updateProfileDescription } = useAuthStore();
   const [activeTab, setActiveTab] = useState<AccountTab>("profile");
   const [showFullEmail, setShowFullEmail] = useState(false);
   const [collabs, setCollabs] = useState<Collaboration[]>([]);
@@ -27,12 +28,21 @@ export default function MyAccount() {
   const [error, setError] = useState<string | null>(null);
   const [interestSaving, setInterestSaving] = useState(false);
   const [interestError, setInterestError] = useState<string | null>(null);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [descriptionSaving, setDescriptionSaving] = useState(false);
+  const [descriptionError, setDescriptionError] = useState<string | null>(null);
 
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
   const avatarLetter = displayName.trim().slice(0, 2).toUpperCase() || "G";
   const memberSince = formatDateShort(profile?.createdAt);
   const emailLabel = user?.email ? (showFullEmail ? user.email : maskEmail(user.email)) : "Not signed in";
   const interests = profile?.interests ?? [];
+  const profileDescription = (profile?.description ?? "").trim();
+  const isDescriptionDirty = descriptionDraft.trim() !== profileDescription;
+
+  useEffect(() => {
+    setDescriptionDraft(profile?.description ?? "");
+  }, [profile?.description]);
 
   const handleInterestsChange = (next: string[]) => {
     if (!user) return;
@@ -43,6 +53,17 @@ export default function MyAccount() {
         setInterestError(err instanceof Error ? err.message : "Failed to save interests.");
       })
       .finally(() => setInterestSaving(false));
+  };
+
+  const handleDescriptionSave = () => {
+    if (!user || !isDescriptionDirty) return;
+    setDescriptionError(null);
+    setDescriptionSaving(true);
+    void updateProfileDescription(descriptionDraft.trim())
+      .catch((err: unknown) => {
+        setDescriptionError(err instanceof Error ? err.message : "Failed to save description.");
+      })
+      .finally(() => setDescriptionSaving(false));
   };
 
   useEffect(() => {
@@ -104,11 +125,6 @@ export default function MyAccount() {
         <div className="topbar-title">
           <span>My Profile</span>
         </div>
-        <div className="topbar-actions">
-          <button className="btn-sm outline" type="button">
-            Edit Profile (UI)
-          </button>
-        </div>
       </div>
 
       <div className="profile-layout">
@@ -126,8 +142,10 @@ export default function MyAccount() {
               )}
             </div>
             <div className="profile-bio">
-              Member since {memberSince}. Keep this section as your portfolio snapshot and activity hub.
+              {profileDescription ||
+                "Add a short profile description so collaborators know your focus and interests."}
             </div>
+            <div className="profile-member-since">Member since {memberSince}</div>
             <div className="profile-stats">
               <div className="profile-stat">
                 <div className="profile-stat-val">{collabs.length}</div>
@@ -158,6 +176,32 @@ export default function MyAccount() {
             />
           </div>
           {interestError && <div className="tag-input__error">{interestError}</div>}
+          <div className="profile-description-editor form-group">
+            <label htmlFor="profile-description-input">Profile Description</label>
+            <textarea
+              id="profile-description-input"
+              className="profile-description-input"
+              value={descriptionDraft}
+              onChange={(e) => setDescriptionDraft(e.target.value)}
+              maxLength={MAX_PROFILE_DESCRIPTION}
+              placeholder="Tell others what you build, what you're looking for, and how to collaborate with you."
+              disabled={!user || descriptionSaving}
+            />
+            <div className="profile-description-actions">
+              <span className="profile-description-count">
+                {descriptionDraft.length}/{MAX_PROFILE_DESCRIPTION}
+              </span>
+              <button
+                className="btn-sm outline"
+                type="button"
+                onClick={handleDescriptionSave}
+                disabled={!user || descriptionSaving || !isDescriptionDirty}
+              >
+                {descriptionSaving ? "Saving..." : "Save Description"}
+              </button>
+            </div>
+          </div>
+          {descriptionError && <div className="tag-input__error">{descriptionError}</div>}
           {!user && (
             <button className="btn-primary" type="button" onClick={() => navigate("/login")}>
               Login

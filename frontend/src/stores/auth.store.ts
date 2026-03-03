@@ -13,6 +13,7 @@ interface AuthState {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   updateProfileInterests: (interests: string[]) => Promise<void>;
+  updateProfileDescription: (description: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -62,6 +63,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       set((current) => ({
         profile: current.profile ? { ...current.profile, interests: previous } : current.profile,
+      }));
+      throw error;
+    }
+  },
+
+  updateProfileDescription: async (description) => {
+    const { user, profile } = get();
+    if (!user || !profile) {
+      throw new Error("You must be signed in to update your description.");
+    }
+
+    const previous = profile.description ?? "";
+    set({ profile: { ...profile, description } });
+
+    try {
+      await AuthService.updateDescription(user.uid, description);
+    } catch (error) {
+      set((current) => ({
+        profile: current.profile ? { ...current.profile, description: previous } : current.profile,
       }));
       throw error;
     }

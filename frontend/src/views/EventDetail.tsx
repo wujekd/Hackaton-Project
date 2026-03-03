@@ -86,14 +86,17 @@ export default function EventDetail() {
 
       {!loading && !error && event && (
         <div className="detail-shell">
-          <section
-            className={`detail-hero ${event.imageUrl ? "detail-hero-image" : "detail-hero-event"}`}
-            style={event.imageUrl ? { backgroundImage: `url(${event.imageUrl})` } : undefined}
-          >
+          {event.imageUrl && (
+            <section
+              className="detail-hero detail-hero-image"
+              style={{ backgroundImage: `url(${event.imageUrl})` }}
+            />
+          )}
+          <div className="detail-info">
             <div className="detail-kicker">{kind}</div>
             <h1 className="detail-title">{event.name}</h1>
             <p className="detail-summary">{event.description || "No description provided yet."}</p>
-          </section>
+          </div>
 
           <div className="detail-grid">
             <article className="detail-card">

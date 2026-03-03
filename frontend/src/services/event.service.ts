@@ -13,8 +13,9 @@ import {
   orderBy,
   Timestamp,
 } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "./firebase";
+import { db, functions, storage } from "./firebase";
 import type { EventItem, EventProposal, EventSignup } from "../types/event";
 
 const EVENTS = "events";
@@ -22,8 +23,22 @@ const PROPOSALS = "eventProposals";
 const USERS = "users";
 const EVENT_SIGNUPS = "eventSignups";
 
+const deleteEventCallable = httpsCallable<
+  { eventId: string },
+  { status: string; deletedSignupCount: number }
+>(
+  functions,
+  "deleteEvent",
+);
+
 export const EventService = {
   async getApproved(): Promise<EventItem[]> {
+    const q = query(collection(db, EVENTS), orderBy("date", "asc"));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as EventItem);
+  },
+
+  async getAllEvents(): Promise<EventItem[]> {
     const q = query(collection(db, EVENTS), orderBy("date", "asc"));
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as EventItem);
@@ -127,5 +142,15 @@ export const EventService = {
   async getSignups(userId: string): Promise<EventSignup[]> {
     const snap = await getDocs(collection(db, USERS, userId, EVENT_SIGNUPS));
     return snap.docs.map((d) => ({ ...d.data() }) as EventSignup);
+  },
+
+  async deleteEventAsAdmin(eventId: string): Promise<number> {
+    const normalizedEventId = eventId.trim();
+    if (!normalizedEventId) {
+      throw new Error("Event id is required.");
+    }
+
+    const result = await deleteEventCallable({ eventId: normalizedEventId });
+    return result.data.deletedSignupCount ?? 0;
   },
 };

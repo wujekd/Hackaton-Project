@@ -1,5 +1,9 @@
 import {initializeApp} from "firebase-admin/app";
-import {FieldValue, getFirestore, Timestamp} from "firebase-admin/firestore";
+import {
+  FieldValue,
+  getFirestore,
+  Timestamp,
+} from "firebase-admin/firestore";
 import {setGlobalOptions} from "firebase-functions/v2";
 import {HttpsError, onCall, onRequest} from "firebase-functions/v2/https";
 
@@ -49,6 +53,10 @@ type GetOrCreateDirectConversationPayload = {
 
 type MarkReadPayload = {
   conversationId?: unknown;
+};
+
+type DeleteEventPayload = {
+  eventId?: unknown;
 };
 
 type ConversationDoc = {
@@ -123,6 +131,14 @@ const normalizeEmail = (value: string): string => value.trim().toLowerCase();
 const buildDirectConversationId = (uidA: string, uidB: string): string => {
   const sorted = [uidA, uidB].sort();
   return `direct_${sorted[0]}_${sorted[1]}`;
+};
+
+const assertAdmin = async (uid: string): Promise<void> => {
+  const userSnap = await db.collection("users").doc(uid).get();
+  const isUserAdmin = userSnap.exists && userSnap.get("admin") === true;
+  if (!isUserAdmin) {
+    throw new HttpsError("permission-denied", "Admin access required.");
+  }
 };
 
 const pickUsername = (
@@ -458,4 +474,68 @@ export const markConversationRead = onCall({
   });
 
   return {status: "ok"};
+});
+
+export const deleteEvent = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  await assertAdmin(uid);
+
+  const data = request.data as DeleteEventPayload;
+  const eventId = asNonEmptyString(data.eventId, "eventId", 180);
+
+  const eventRef = db.collection("events").doc(eventId);
+  const eventSnap = await eventRef.get();
+  if (!eventSnap.exists) {
+    throw new HttpsError("not-found", "Event not found.");
+  }
+
+  let deletedSignupCount = 0;
+  let lastUserDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+  let hasMoreUsers = true;
+  while (hasMoreUsers) {
+    let usersQuery = db.collection("users").limit(450);
+    if (lastUserDoc) {
+      usersQuery = usersQuery.startAfter(lastUserDoc);
+    }
+
+    const usersSnap = await usersQuery.get();
+    if (usersSnap.empty) {
+      break;
+    }
+
+    const signupRefs = usersSnap.docs.map((userDoc) =>
+      userDoc.ref.collection("eventSignups").doc(eventId),
+    );
+    const signupSnaps = signupRefs.length > 0 ?
+      await db.getAll(...signupRefs) :
+      [];
+    const batch = db.batch();
+    let deletedInBatch = 0;
+    signupSnaps.forEach((signupSnap) => {
+      if (!signupSnap.exists) return;
+      batch.delete(signupSnap.ref);
+      deletedInBatch += 1;
+      deletedSignupCount += 1;
+    });
+    if (deletedInBatch > 0) {
+      await batch.commit();
+    }
+
+    lastUserDoc = usersSnap.docs[usersSnap.docs.length - 1];
+    hasMoreUsers = usersSnap.size === 450;
+  }
+
+  await eventRef.delete();
+
+  return {
+    status: "ok",
+    deletedSignupCount,
+  };
 });

@@ -81,27 +81,6 @@ export default function Home() {
 
   return (
     <div className="page-view">
-      <div className="topbar">
-        <div className="topbar-title">
-          Good morning, <span>{firstName}</span>
-        </div>
-        <div className="topbar-actions">
-          <div className="search-bar">
-            <svg className="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input placeholder="Search students, collabs" readOnly />
-          </div>
-          <Link className="btn-sm accent" to="/collaborations/new">
-            + New Collab
-          </Link>
-          <Link className="btn-sm outline" to="/events/suggest">
-            Suggest Event
-          </Link>
-        </div>
-      </div>
-
       <div className="home-hero">
         <div className="home-hero-content">
           <div className="home-hero-copy">
@@ -112,53 +91,55 @@ export default function Home() {
             <div className="home-hero-sub">Here is what is happening across campus right now.</div>
           </div>
 
-          <div className="home-hero-cards" aria-label="Campus quick overview">
-            <article className="home-hero-card">
-              <div className="home-hero-card-label">What&apos;s next</div>
-              {eventLoading && <div className="home-hero-card-title">Loading your schedule...</div>}
-              {!eventLoading && nextCampusItem && (
-                <>
-                  <div className="home-hero-card-title">{nextCampusItem.event.name}</div>
-                  {nextCampusItem.date && (
-                    <div className="home-hero-card-meta">
-                      {nextCampusItem.date.toLocaleDateString("en-GB", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                      })}{" "}
-                      at{" "}
-                      {nextCampusItem.date.toLocaleTimeString("en-GB", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
-              {!eventLoading && !nextCampusItem && (
-                <>
-                  <div className="home-hero-card-title">No upcoming events yet</div>
-                  <div className="home-hero-card-meta">Join one to build your campus routine.</div>
-                </>
-              )}
-            </article>
+          {user && (
+            <div className="home-hero-cards" aria-label="Campus quick overview">
+              <article className="home-hero-card">
+                <div className="home-hero-card-label">What&apos;s next</div>
+                {eventLoading && <div className="home-hero-card-title">Loading your schedule...</div>}
+                {!eventLoading && nextCampusItem && (
+                  <>
+                    <div className="home-hero-card-title">{nextCampusItem.event.name}</div>
+                    {nextCampusItem.date && (
+                      <div className="home-hero-card-meta">
+                        {nextCampusItem.date.toLocaleDateString("en-GB", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                        })}{" "}
+                        at{" "}
+                        {nextCampusItem.date.toLocaleTimeString("en-GB", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    )}
+                  </>
+                )}
+                {!eventLoading && !nextCampusItem && (
+                  <>
+                    <div className="home-hero-card-title">No upcoming events yet</div>
+                    <div className="home-hero-card-meta">Join one to build your campus routine.</div>
+                  </>
+                )}
+              </article>
 
-            <article className="home-hero-card">
-              <div className="home-hero-card-label">Study streak</div>
-              <div className="home-hero-card-title">{streakDays} day streak</div>
-              <div className="home-hero-card-meta">
-                {streakRemaining === 0
-                  ? "Weekly goal complete."
-                  : `${streakRemaining} more day${streakRemaining === 1 ? "" : "s"} to hit your weekly goal.`}
-              </div>
-              <div className="home-streak-track" role="presentation">
-                <span style={{ width: `${streakProgress}%` }} />
-              </div>
-              <div className="home-streak-foot">
-                {streakDays}/{streakGoal} days this week
-              </div>
-            </article>
-          </div>
+              <article className="home-hero-card">
+                <div className="home-hero-card-label">Study streak</div>
+                <div className="home-hero-card-title">{streakDays} day streak</div>
+                <div className="home-hero-card-meta">
+                  {streakRemaining === 0
+                    ? "Weekly goal complete."
+                    : `${streakRemaining} more day${streakRemaining === 1 ? "" : "s"} to hit your weekly goal.`}
+                </div>
+                <div className="home-streak-track" role="presentation">
+                  <span style={{ width: `${streakProgress}%` }} />
+                </div>
+                <div className="home-streak-foot">
+                  {streakDays}/{streakGoal} days this week
+                </div>
+              </article>
+            </div>
+          )}
         </div>
       </div>
 
@@ -240,7 +221,6 @@ export default function Home() {
                 >
                   Message Host
                 </Link>
-                <button className="btn-sm ghost" type="button">Invite</button>
               </div>
             </article>
           ))}
