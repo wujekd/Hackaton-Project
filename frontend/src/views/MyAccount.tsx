@@ -108,7 +108,7 @@ export default function MyAccount() {
       <div className="profile-layout">
         <aside className="profile-left">
           <div className="profile-cover" />
-          <div style={{ textAlign: "center", marginTop: 36 }}>
+          <div className="profile-left-main">
             <div className="profile-avatar">{avatarLetter}</div>
             <div className="profile-name">{displayName}</div>
             <div className="profile-handle">
@@ -157,7 +157,7 @@ export default function MyAccount() {
         <section className="profile-right">
           <div className="prof-sec-title">
             Account View
-            <div style={{ display: "flex", gap: 6 }}>
+            <div className="account-tab-group">
               <button
                 className={`filter-pill ${activeTab === "profile" ? "active" : ""}`}
                 type="button"
@@ -186,7 +186,7 @@ export default function MyAccount() {
 
           {user && !loading && activeTab === "profile" && (
             <>
-              <div style={{ marginBottom: 24 }}>
+              <div className="account-profile-section">
                 <div className="prof-sec-title">
                   My Collabs
                   <Link className="btn-sm accent" to="/collaborations/new">
@@ -230,7 +230,7 @@ export default function MyAccount() {
 
               <div className="prof-sec-title">
                 Discover Students
-                <div className="search-bar" style={{ width: 190 }}>
+                <div className="search-bar account-search-bar">
                   <svg className="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />

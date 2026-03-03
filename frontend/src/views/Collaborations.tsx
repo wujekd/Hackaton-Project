@@ -68,7 +68,7 @@ export default function Collaborations() {
 
       <div className="collabs-layout">
         <section className="collabs-feed">
-          <div className="filters" style={{ borderBottom: "none", paddingBottom: 12 }}>
+          <div className="filters collab-filters">
             {filters.map((filter) => (
               <button
                 key={filter}
@@ -165,14 +165,14 @@ export default function Collaborations() {
 
           <div className="aside-card">
             <div className="aside-card-title">Matched for You</div>
-            <p style={{ fontSize: 12, color: "var(--muted2)", marginBottom: 9 }}>
+            <p className="collabs-match-copy">
               Mockup section without recommendation logic. Showing latest posts.
             </p>
-            <div style={{ display: "grid", gap: 6 }}>
+            <div className="collabs-match-list">
               {collabs.slice(0, 2).map((collab) => (
-                <div key={`match-${collab.id}`} style={{ background: "var(--bg3)", padding: 8, fontSize: 12 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 1 }}>{collab.title}</div>
-                  <div style={{ color: "var(--muted)" }}>{collab.authorName}</div>
+                <div key={`match-${collab.id}`} className="collabs-match-item">
+                  <div className="collabs-match-title">{collab.title}</div>
+                  <div className="collabs-match-author">{collab.authorName}</div>
                 </div>
               ))}
             </div>
