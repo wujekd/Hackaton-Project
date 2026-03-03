@@ -343,6 +343,13 @@
             line-height: 1.65;
         }
 
+        .item-meta {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -365,6 +372,15 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+        }
+
+        .poll-placeholder {
+            background: var(--bg3);
+            border: 1px solid var(--panel-border);
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.55;
         }
 
         .poll-option {
@@ -604,38 +620,9 @@
             <div class="panel-content">
                 <!-- Poll Section -->
                 <div class="poll-section">
-                    <div class="poll-question">What's your favorite campus event type?</div>
-                    <div class="poll-options" id="poll-options">
-                        <div class="poll-option">
-                            <div class="poll-option-bar" id="bar-0" style="width: 0%"></div>
-                            <div class="poll-option-content">
-                                <span class="poll-option-text">Social Mixers</span>
-                                <span class="poll-option-percent" id="percent-0"></span>
-                            </div>
-                        </div>
-                        <div class="poll-option">
-                            <div class="poll-option-bar" id="bar-1" style="width: 0%"></div>
-                            <div class="poll-option-content">
-                                <span class="poll-option-text">Tech Workshops</span>
-                                <span class="poll-option-percent" id="percent-1"></span>
-                            </div>
-                        </div>
-                        <div class="poll-option">
-                            <div class="poll-option-bar" id="bar-2" style="width: 0%"></div>
-                            <div class="poll-option-content">
-                                <span class="poll-option-text">Career Fairs</span>
-                                <span class="poll-option-percent" id="percent-2"></span>
-                            </div>
-                        </div>
-                        <div class="poll-option">
-                            <div class="poll-option-bar" id="bar-3" style="width: 0%"></div>
-                            <div class="poll-option-content">
-                                <span class="poll-option-text">Hackathons</span>
-                                <span class="poll-option-percent" id="percent-3"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="poll-votes" id="poll-votes">Loading votes...</div>
+                    <div class="poll-question" id="poll-title">Loading poll...</div>
+                    <div class="poll-options" id="poll-options"></div>
+                    <div class="poll-votes" id="poll-votes">Loading dashboard data...</div>
                 </div>
 
                 <!-- QR Code Section -->
@@ -714,21 +701,36 @@
     </div>
 
 
-    <script>
-        /* ── Particle Background ── */
+        <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            doc,
+            getDoc,
+            getDocs,
+            limit,
+            orderBy,
+            query
+        } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
         (function () {
-            const canvas = document.getElementById('particle-canvas');
-            const ctx = canvas.getContext('2d');
-            let W, H, particles = [];
+            const canvas = document.getElementById("particle-canvas");
+            const ctx = canvas.getContext("2d");
+            let W;
+            let H;
+            const particles = [];
 
             function resize() {
-                W = canvas.width  = window.innerWidth;
+                W = canvas.width = window.innerWidth;
                 H = canvas.height = window.innerHeight;
             }
-            window.addEventListener('resize', resize);
+            window.addEventListener("resize", resize);
             resize();
 
-            function rand(min, max) { return Math.random() * (max - min) + min; }
+            function rand(min, max) {
+                return Math.random() * (max - min) + min;
+            }
 
             function createParticle() {
                 return {
@@ -738,16 +740,13 @@
                     speed: rand(0.3, 1.1),
                     opacity: rand(0.08, 0.28),
                     drift: rand(-0.25, 0.25),
-                    // mix of red and white particles
-                    color: Math.random() < 0.35
-                        ? `rgba(212,0,42,`
-                        : `rgba(234,236,242,`
+                    color: Math.random() < 0.35 ? "rgba(212,0,42," : "rgba(234,236,242,"
                 };
             }
 
-            for (let i = 0; i < 55; i++) {
+            for (let i = 0; i < 55; i += 1) {
                 const p = createParticle();
-                p.y = rand(0, H); // spread on init
+                p.y = rand(0, H);
                 particles.push(p);
             }
 
@@ -756,7 +755,7 @@
                 for (const p of particles) {
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                    ctx.fillStyle = p.color + p.opacity + ')';
+                    ctx.fillStyle = p.color + p.opacity + ")";
                     ctx.fill();
 
                     p.y -= p.speed;
@@ -773,81 +772,150 @@
             draw();
         })();
 
-        /* ── Data ── */
-        const EVENTS = [
-            { title: 'Welcome Week Mixer',       desc: 'Join us at the quad for free food and music. Meet new students!' },
-            { title: 'Tech Career Fair',          desc: 'Top London tech companies are visiting campus today.' },
-            { title: 'Hackathon 2026',            desc: '48-hour coding marathon with amazing prizes.' },
-            { title: 'Design Workshop',           desc: 'Learn Figma basics from industry experts.' },
-            { title: 'Guest Lecture: AI Ethics',  desc: 'Dr. Sarah Chen explores the moral challenges of modern AI systems.' },
-            { title: 'Photography Walk',          desc: 'Campus photo tour led by the MDX Photography Society.' },
-            { title: 'Startup Pitch Night',       desc: 'Student entrepreneurs pitch live to a panel of real investors.' },
-            { title: 'Mental Health Awareness Day', desc: 'Free workshops, yoga sessions, and counselling drop-ins all day.' },
-            { title: 'International Food Fest',   desc: 'Taste dishes from 30+ countries prepared by fellow students.' },
-            { title: 'Open Mic Night',            desc: 'Showcase your talent — comedy, music, spoken word. All welcome.' },
-            { title: 'CV & Interview Bootcamp',   desc: 'Hands-on prep session with MDX careers advisors and alumni.' },
-            { title: 'Robotics Demo Day',         desc: 'Engineering students unveil their semester-long robot projects.' },
-        ];
+        const firebaseConfig = {
+            apiKey: "AIzaSyC-pJW_7T53UkMFwiLJA4-rlrwi9sFysZA",
+            authDomain: "mdxnetwork.firebaseapp.com",
+            projectId: "mdxnetwork",
+            storageBucket: "mdxnetwork.firebasestorage.app",
+            messagingSenderId: "1044486854040",
+            appId: "1:1044486854040:web:fb33fa68db5649c41547ed",
+            measurementId: "G-L3J011Q1C3"
+        };
 
-        const COLLABS = [
-            { title: 'AI Study Group',            desc: 'Looking for partners to build a deep learning model for the final project.' },
-            { title: 'Startup Co-founder Needed', desc: 'Business student seeking a developer for a fintech app idea.' },
-            { title: 'Film Short Crew Wanted',    desc: 'Director needs a cinematographer and sound designer for a 10-min short.' },
-            { title: 'Game Jam Team',             desc: 'Forming a 4-person team for the upcoming 72-hour global game jam.' },
-            { title: 'Research Paper — Cyber',    desc: 'CS student looking for a co-author on a network security paper.' },
-            { title: 'UX Research Partner',       desc: 'Need someone to run usability tests for a mobile health app.' },
-            { title: 'Music Production Collab',   desc: 'Producer looking for vocalists and a mixing engineer.' },
-            { title: 'Social Enterprise Team',    desc: 'Building a platform to connect food-surplus cafes with students.' },
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const DEFAULT_POLL = {
+            status: "placeholder",
+            title: "Polls are coming soon",
+            description: "This section is reserved for live poll results."
+        };
+
+        const DASHBOARD_DOC_CANDIDATES = [
+            ["dashboard", "current"],
+            ["dashboard", "overview"]
         ];
 
         const PAGE_SIZE = 4;
         const TICK = 10;
-        const CIRC = 2 * Math.PI * 12; // r=12 → 75.4
+        const CIRC = 2 * Math.PI * 12;
+        const dateFormatter = new Intl.DateTimeFormat("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        });
+        const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+
+        let eventPages = [[{ title: "Loading events...", desc: "Fetching from Firebase.", meta: "" }]];
+        let collabPages = [[{ title: "Loading collaborations...", desc: "Fetching from Firebase.", meta: "" }]];
+        let totalPages = 1;
+        let currentPage = 0;
+        let timeLeft = TICK;
+
+        const arcEls = [
+            document.getElementById("timer-arc-events"),
+            document.getElementById("timer-arc-collabs")
+        ];
+        const numEls = [
+            document.getElementById("timer-num-events"),
+            document.getElementById("timer-num-collabs")
+        ];
+
+        function escapeHtml(value) {
+            return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                "\"": "&quot;",
+                "'": "&#39;"
+            })[char]);
+        }
 
         function getPages(items) {
             const out = [];
-            for (let i = 0; i < items.length; i += PAGE_SIZE) out.push(items.slice(i, i + PAGE_SIZE));
+            for (let i = 0; i < items.length; i += PAGE_SIZE) {
+                out.push(items.slice(i, i + PAGE_SIZE));
+            }
             return out;
         }
 
-        const eventPages  = getPages(EVENTS);
-        const collabPages = getPages(COLLABS);
-        const totalPages  = Math.max(eventPages.length, collabPages.length);
-        let currentPage   = 0;
-        let timeLeft      = TICK;
+        function toDate(value) {
+            if (!value) return null;
+            if (value instanceof Date) return value;
+            if (typeof value?.toDate === "function") return value.toDate();
+            if (typeof value === "string" || typeof value === "number") {
+                const parsed = new Date(value);
+                return Number.isNaN(parsed.getTime()) ? null : parsed;
+            }
+            if (typeof value?.seconds === "number") {
+                return new Date(value.seconds * 1000);
+            }
+            return null;
+        }
 
-        const arcEls = [
-            document.getElementById('timer-arc-events'),
-            document.getElementById('timer-arc-collabs'),
-        ];
-        const numEls = [
-            document.getElementById('timer-num-events'),
-            document.getElementById('timer-num-collabs'),
-        ];
+        function formatDate(value) {
+            const parsed = toDate(value);
+            return parsed ? dateFormatter.format(parsed) : "Date TBD";
+        }
+
+        function formatDateTime(value) {
+            const parsed = toDate(value);
+            return parsed ? dateTimeFormatter.format(parsed) : "";
+        }
+
+        function normalizeEvent(item) {
+            return {
+                title: item?.name || item?.title || "Untitled event",
+                desc: item?.description || "No description provided.",
+                meta: formatDate(item?.date)
+            };
+        }
+
+        function normalizeCollaboration(item) {
+            const tags = Array.isArray(item?.tags)
+                ? item.tags.filter((tag) => typeof tag === "string" && tag.trim()).slice(0, 3)
+                : [];
+            const parts = [];
+            if (item?.authorName) parts.push(`By ${item.authorName}`);
+            if (tags.length > 0) parts.push(tags.map((tag) => `#${tag}`).join(" "));
+            return {
+                title: item?.title || "Untitled collaboration",
+                desc: item?.description || "No description provided.",
+                meta: parts.join(" | ")
+            };
+        }
 
         function setArcs(t) {
-            const frac   = t / TICK;
+            const frac = t / TICK;
             const offset = CIRC * (1 - frac);
             const r = Math.round(212 * (1 - frac) + 80 * frac);
             const g = Math.round(180 * frac);
-            const color  = `rgb(${r},${g},42)`;
-            const glow   = `drop-shadow(0 0 ${2 + (TICK - t) * 0.4}px rgba(${r},${g},42,0.9))`;
-            arcEls.forEach(el => {
+            const color = `rgb(${r},${g},42)`;
+            const glow = `drop-shadow(0 0 ${2 + (TICK - t) * 0.4}px rgba(${r},${g},42,0.9))`;
+            arcEls.forEach((el) => {
                 el.style.strokeDashoffset = offset;
                 el.style.stroke = color;
                 el.style.filter = glow;
             });
-            numEls.forEach(el => el.textContent = t);
+            numEls.forEach((el) => {
+                el.textContent = String(t);
+            });
         }
 
         function resetArcs() {
-            arcEls.forEach(el => {
-                el.style.transition = 'none';
+            arcEls.forEach((el) => {
+                el.style.transition = "none";
                 el.style.strokeDashoffset = 0;
             });
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                arcEls.forEach(el => {
-                    el.style.transition = 'stroke-dashoffset 1s linear, stroke 0.4s ease, filter 0.4s ease';
+                arcEls.forEach((el) => {
+                    el.style.transition = "stroke-dashoffset 1s linear, stroke 0.4s ease, filter 0.4s ease";
                 });
             }));
         }
@@ -855,29 +923,31 @@
         function buildDots(containerId, total, current) {
             const el = document.getElementById(containerId);
             el.innerHTML = Array.from({ length: total }, (_, i) =>
-                `<div class="page-dot${i === current ? ' active' : ''}"></div>`
-            ).join('');
+                `<div class="page-dot${i === current ? " active" : ""}"></div>`
+            ).join("");
         }
 
         function updateDots(page) {
-            ['page-dots-events', 'page-dots-collabs'].forEach(id => {
-                document.getElementById(id).querySelectorAll('.page-dot').forEach((d, i) => {
-                    d.classList.toggle('active', i === page);
+            ["page-dots-events", "page-dots-collabs"].forEach((id) => {
+                document.getElementById(id).querySelectorAll(".page-dot").forEach((dot, index) => {
+                    dot.classList.toggle("active", index === page);
                 });
             });
         }
 
         function renderCards(listEl, items) {
-            listEl.innerHTML = items.map(item => `
+            listEl.innerHTML = items.map((item) => `
                 <div class="item-card">
-                    <div class="item-title">${item.title}</div>
-                    <div class="item-desc">${item.desc}</div>
-                </div>`).join('');
+                    <div class="item-title">${escapeHtml(item.title)}</div>
+                    <div class="item-desc">${escapeHtml(item.desc)}</div>
+                    ${item.meta ? `<div class="item-meta">${escapeHtml(item.meta)}</div>` : ""}
+                </div>
+            `).join("");
         }
 
         function showPage(page, animate) {
-            const eList = document.getElementById('events-list');
-            const cList = document.getElementById('collabs-list');
+            const eList = document.getElementById("events-list");
+            const cList = document.getElementById("collabs-list");
             const ep = eventPages[page % eventPages.length];
             const cp = collabPages[page % collabPages.length];
 
@@ -888,41 +958,147 @@
                 return;
             }
 
-            // Step 1: fade + slide out
-            eList.classList.add('fading-out');
-            cList.classList.add('fading-out');
+            eList.classList.add("fading-out");
+            cList.classList.add("fading-out");
 
             setTimeout(() => {
-                // Step 2: swap content, position below invisibly
                 renderCards(eList, ep);
                 renderCards(cList, cp);
                 updateDots(page);
-                eList.classList.remove('fading-out');
-                cList.classList.remove('fading-out');
-                eList.classList.add('fading-in');
-                cList.classList.add('fading-in');
+                eList.classList.remove("fading-out");
+                cList.classList.remove("fading-out");
+                eList.classList.add("fading-in");
+                cList.classList.add("fading-in");
 
-                // Trigger reflow then slide in
                 eList.offsetHeight;
                 requestAnimationFrame(() => {
-                    eList.classList.add('visible');
-                    cList.classList.add('visible');
+                    eList.classList.add("visible");
+                    cList.classList.add("visible");
                 });
 
                 setTimeout(() => {
-                    eList.classList.remove('fading-in', 'visible');
-                    cList.classList.remove('fading-in', 'visible');
+                    eList.classList.remove("fading-in", "visible");
+                    cList.classList.remove("fading-in", "visible");
                 }, 300);
             }, 250);
         }
 
-        // rAF-based timer for smooth ticking
+        function setDashboardPages(data) {
+            const eventCards = data.events.map(normalizeEvent);
+            const collabCards = data.collaborations.map(normalizeCollaboration);
+
+            eventPages = getPages(eventCards);
+            collabPages = getPages(collabCards);
+
+            if (eventPages.length === 0) {
+                eventPages = [[{
+                    title: "No events yet",
+                    desc: "No event documents found in Firebase.",
+                    meta: ""
+                }]];
+            }
+            if (collabPages.length === 0) {
+                collabPages = [[{
+                    title: "No collaborations yet",
+                    desc: "No collaboration documents found in Firebase.",
+                    meta: ""
+                }]];
+            }
+
+            totalPages = Math.max(eventPages.length, collabPages.length, 1);
+            currentPage = 0;
+            timeLeft = TICK;
+            buildDots("page-dots-events", totalPages, 0);
+            buildDots("page-dots-collabs", totalPages, 0);
+            showPage(0, false);
+            setArcs(timeLeft);
+        }
+
+        function renderPoll(polls, generatedAt) {
+            const titleEl = document.getElementById("poll-title");
+            const optionsEl = document.getElementById("poll-options");
+            const votesEl = document.getElementById("poll-votes");
+            const qrSection = document.querySelector(".qr-section");
+
+            if (polls?.status === "placeholder") {
+                titleEl.textContent = polls.title || DEFAULT_POLL.title;
+                optionsEl.innerHTML = `<div class="poll-placeholder">${escapeHtml(polls.description || DEFAULT_POLL.description)}</div>`;
+                votesEl.textContent = generatedAt
+                    ? `Updated ${formatDateTime(generatedAt)}`
+                    : "Waiting for poll activation";
+                qrSection.style.display = "none";
+                return;
+            }
+
+            const options = Array.isArray(polls?.options) ? polls.options : [];
+            if (options.length === 0) {
+                titleEl.textContent = polls?.title || "No active poll";
+                optionsEl.innerHTML = "<div class=\"poll-placeholder\">No poll options available right now.</div>";
+                votesEl.textContent = generatedAt ? `Updated ${formatDateTime(generatedAt)}` : "";
+                qrSection.style.display = "none";
+                return;
+            }
+
+            const parsed = options.map((option) => {
+                const label = option?.label || option?.text || "Option";
+                const votes = Number.isFinite(option?.votes) ? option.votes : 0;
+                return { label, votes };
+            });
+            const totalVotes = parsed.reduce((sum, option) => sum + option.votes, 0);
+
+            titleEl.textContent = polls?.title || "Live poll";
+            optionsEl.innerHTML = parsed.map((option) => {
+                const percent = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
+                return `
+                    <div class="poll-option voted">
+                        <div class="poll-option-bar" style="width: ${percent}%"></div>
+                        <div class="poll-option-content">
+                            <span class="poll-option-text">${escapeHtml(option.label)}</span>
+                            <span class="poll-option-percent">${percent}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+            votesEl.textContent = `${totalVotes.toLocaleString()} votes cast`;
+            qrSection.style.display = "";
+        }
+
+        async function loadDashboardDoc() {
+            for (const [collectionName, docId] of DASHBOARD_DOC_CANDIDATES) {
+                const snap = await getDoc(doc(db, collectionName, docId));
+                if (snap.exists()) {
+                    return snap.data();
+                }
+            }
+            return null;
+        }
+
+        async function fetchDashboardData() {
+            const [eventsSnap, collabsSnap, dashboardDoc] = await Promise.all([
+                getDocs(query(collection(db, "events"), orderBy("date", "asc"), limit(24))),
+                getDocs(query(collection(db, "collaborations"), orderBy("createdAt", "desc"), limit(24))),
+                loadDashboardDoc()
+            ]);
+
+            const fallbackEvents = eventsSnap.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+            const fallbackCollabs = collabsSnap.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
+
+            return {
+                generatedAt: dashboardDoc?.generatedAt ?? new Date().toISOString(),
+                events: Array.isArray(dashboardDoc?.events) ? dashboardDoc.events : fallbackEvents,
+                collaborations: Array.isArray(dashboardDoc?.collaborations) ? dashboardDoc.collaborations : fallbackCollabs,
+                polls: dashboardDoc?.polls ?? DEFAULT_POLL
+            };
+        }
+
         let lastTick = null;
         function tick(now) {
-            if (lastTick === null) lastTick = now;
+            if (lastTick === null) {
+                lastTick = now;
+            }
             if (now - lastTick >= 1000) {
                 lastTick += 1000;
-                timeLeft--;
+                timeLeft -= 1;
                 setArcs(timeLeft);
                 if (timeLeft <= 0) {
                     currentPage = (currentPage + 1) % totalPages;
@@ -934,45 +1110,37 @@
             requestAnimationFrame(tick);
         }
 
-        /* ── Poll ── */
-        const pollVotes = [45, 32, 28, 15];
+        function init() {
+            buildDots("page-dots-events", totalPages, 0);
+            buildDots("page-dots-collabs", totalPages, 0);
+            showPage(0, false);
 
-        function initPoll() {
-            const total = pollVotes.reduce((a, b) => a + b, 0);
-            pollVotes.forEach((votes, index) => {
-                const percent = total > 0 ? Math.round((votes / total) * 100) : 0;
-                const percentLabel = document.getElementById(`percent-${index}`);
-                if (percentLabel) percentLabel.textContent = `${percent}%`;
-                const option = document.querySelector(`.poll-option:nth-child(${index + 1})`);
-                if (option) option.classList.add('voted');
-            });
-            setTimeout(() => {
-                pollVotes.forEach((votes, index) => {
-                    const percent = total > 0 ? Math.round((votes / total) * 100) : 0;
-                    const bar = document.getElementById(`bar-${index}`);
-                    if (bar) {
-                        bar.style.width = `${percent}%`;
-                        setTimeout(() => bar.classList.add('filled'), 950);
-                    }
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                arcEls.forEach((el) => {
+                    el.style.transition = "stroke-dashoffset 1s linear, stroke 0.4s ease, filter 0.4s ease";
                 });
-            }, 700);
-            const votesLabel = document.getElementById('poll-votes');
-            if (votesLabel) votesLabel.textContent = `${total.toLocaleString()} votes cast`;
+                setArcs(TICK);
+                requestAnimationFrame(tick);
+            }));
+
+            fetchDashboardData()
+                .then((data) => {
+                    setDashboardPages(data);
+                    renderPoll(data.polls, data.generatedAt);
+                })
+                .catch((error) => {
+                    console.error("Failed to load dashboard data", error);
+                    setDashboardPages({
+                        events: [],
+                        collaborations: []
+                    });
+                    renderPoll(DEFAULT_POLL, null);
+                    const votesEl = document.getElementById("poll-votes");
+                    votesEl.textContent = "Unable to load Firebase data";
+                });
         }
 
-        /* ── Init ── */
-        buildDots('page-dots-events',  totalPages, 0);
-        buildDots('page-dots-collabs', totalPages, 0);
-        showPage(0, false);
-        // Set arc transitions after initial render
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-            arcEls.forEach(el => {
-                el.style.transition = 'stroke-dashoffset 1s linear, stroke 0.4s ease, filter 0.4s ease';
-            });
-            setArcs(TICK);
-            requestAnimationFrame(tick);
-        }));
-        initPoll();
+        init();
     </script>
 </body>
 
