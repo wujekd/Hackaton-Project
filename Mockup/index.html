@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MDX Collab — Student Collaboration Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0c0d10;
+    --bg2:     #111318;
+    --bg3:     #181b21;
+    --card:    #1c1f27;
+    --border:  rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --red:     #d4002a;
+    --red-dim: rgba(212,0,42,0.12);
+    --red-mid: rgba(212,0,42,0.22);
+    --text:    #eaecf2;
+    --muted:   #6e7491;
+    --muted2:  #9399b8;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,h4,h5 { font-family: 'Syne', sans-serif; }
+
+  .page        { display: none; min-height: 100vh; }
+  .page.active { display: block; }
+  .flex-page   { display: none !important; }
+  .flex-page.active { display: flex !important; }
+
+  @keyframes fadeUp  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+
+  /* ── SHIELD MARK ── */
+  .shield {
+    flex-shrink: 0; background: var(--red);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 62%, 50% 100%, 0% 62%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .shield-text { font-family:'Syne',sans-serif; font-weight:800; color:white; line-height:1; padding-bottom:14%; }
+
+  /* ════ LOGIN ════ */
+  #login-page {
+    align-items:center; justify-content:center;
+    background: radial-gradient(ellipse 55% 50% at 15% 60%, rgba(212,0,42,0.09) 0%, transparent 100%), var(--bg);
+  }
+  .login-box {
+    background:var(--bg2); border:1px solid var(--border2);
+    width:400px; padding:48px 44px; animation:fadeUp 0.45s ease both;
+  }
+  .login-logo { display:flex; align-items:center; gap:12px; margin-bottom:30px; }
+  .login-logo-text { font-family:'Syne',sans-serif; font-weight:700; font-size:20px; letter-spacing:-0.02em; }
+  .login-logo-text span { color:var(--red); }
+  .login-tagline { color:var(--muted2); font-size:13px; margin-bottom:28px; line-height:1.65; }
+  .input-group { margin-bottom:13px; }
+  .input-group label { display:block; font-size:10.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .input-group input {
+    width:100%; background:var(--bg3); border:1px solid var(--border);
+    padding:11px 14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px;
+    transition:border-color 0.18s, box-shadow 0.18s; outline:none;
+  }
+  .input-group input:focus { border-color:var(--red); box-shadow:0 0 0 3px rgba(212,0,42,0.1); }
+  .btn-primary {
+    width:100%; padding:12px; border:none; cursor:pointer; background:var(--red); color:#fff;
+    font-family:'Syne',sans-serif; font-weight:700; font-size:14px; letter-spacing:0.03em;
+    transition:background 0.18s; margin-top:6px;
+  }
+  .btn-primary:hover { background:#b8001f; }
+  .divider { display:flex; align-items:center; gap:12px; margin:18px 0; color:var(--muted); font-size:12px; }
+  .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+  .btn-ghost {
+    width:100%; padding:11px; border:1px solid var(--border); cursor:pointer;
+    background:transparent; color:var(--muted2); font-family:'DM Sans',sans-serif; font-size:14px;
+    transition:border-color 0.18s, color 0.18s;
+  }
+  .btn-ghost:hover { border-color:var(--border2); color:var(--text); }
+  .login-footer { text-align:center; margin-top:18px; font-size:13px; color:var(--muted); }
+  .link-btn { background:none; border:none; cursor:pointer; color:var(--red); font-size:13px; font-family:'DM Sans',sans-serif; }
+  .link-btn:hover { text-decoration:underline; }
+
+  /* ════ APP ════ */
+  #app-page { flex-direction:row; }
+  .sidebar {
+    width:228px; min-height:100vh; background:var(--bg2); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; padding:20px 12px; position:sticky; top:0; flex-shrink:0; z-index:10;
+  }
+  .sidebar-logo { display:flex; align-items:center; gap:10px; padding:0 6px; margin-bottom:28px; }
+  .sidebar-logo-text { font-family:'Syne',sans-serif; font-weight:700; font-size:17px; letter-spacing:-0.02em; }
+  .sidebar-logo-text span { color:var(--red); }
+  .nav-label { font-size:9.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); padding:0 8px; margin-bottom:5px; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:9px 8px; cursor:pointer; color:var(--muted2);
+    font-size:13.5px; font-weight:500; transition:background 0.15s, color 0.15s; margin-bottom:1px;
+    border:none; background:none; width:100%; text-align:left;
+  }
+  .nav-item:hover  { background:var(--bg3); color:var(--text); }
+  .nav-item.active { background:var(--red-dim); color:var(--red); }
+  .nav-icon { width:15px; height:15px; flex-shrink:0; display:flex; align-items:center; justify-content:center; opacity:0.65; }
+  .nav-item.active .nav-icon { opacity:1; }
+  .badge {
+    margin-left:auto; background:var(--red); color:white; font-size:10px;
+    font-weight:700; min-width:16px; height:16px; padding:0 4px; display:flex; align-items:center; justify-content:center;
+  }
+  .sidebar-spacer { flex:1; }
+  .sidebar-user {
+    display:flex; align-items:center; gap:9px; padding:9px 8px;
+    cursor:pointer; transition:background 0.15s; border:none; background:none; width:100%;
+  }
+  .sidebar-user:hover { background:var(--bg3); }
+  .avatar {
+    flex-shrink:0; background:var(--red); display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-family:'Syne',sans-serif; color:white;
+  }
+  .av-red   { background:#b8001f; }
+  .av-mid   { background:#7a1432; }
+  .av-slate { background:#3a3f5c; }
+  .av-muted { background:#2e3248; }
+  .sidebar-user-name { font-size:13px; font-weight:600; color:var(--text); text-align:left; }
+  .sidebar-user-role { font-size:11px; color:var(--muted); text-align:left; }
+
+  /* ── MAIN ── */
+  .main-content { flex:1; overflow-y:auto; min-height:100vh; }
+  .section { display:none; animation:fadeIn 0.18s ease both; }
+  .section.active { display:block; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border); position:sticky; top:0;
+    background:rgba(12,13,16,0.94); backdrop-filter:blur(14px); z-index:5;
+  }
+  .topbar-title { font-family:'Syne',sans-serif; font-weight:700; font-size:17px; }
+  .topbar-title span { color:var(--red); }
+  .topbar-actions { display:flex; align-items:center; gap:9px; }
+  .icon-btn {
+    width:34px; height:34px; border:1px solid var(--border); background:var(--card);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background 0.15s, border-color 0.15s; color:var(--muted2);
+  }
+  .icon-btn:hover { background:var(--bg3); border-color:var(--border2); color:var(--text); }
+  .search-bar {
+    display:flex; align-items:center; gap:8px; background:var(--card);
+    border:1px solid var(--border); padding:7px 12px; width:205px;
+  }
+  .search-bar input { background:none; border:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; outline:none; width:100%; }
+  .search-bar input::placeholder { color:var(--muted); }
+  .si { width:13px; height:13px; color:var(--muted); flex-shrink:0; }
+
+  /* ── HOME ── */
+  .home-hero {
+    padding:28px 28px 18px; border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg, rgba(212,0,42,0.04) 0%, transparent 100%);
+  }
+  .home-hero-greeting { color:var(--muted2); font-size:12.5px; margin-bottom:3px; }
+  .home-hero-name { font-family:'Syne',sans-serif; font-weight:800; font-size:27px; margin-bottom:4px; }
+  .home-hero-name span { color:var(--red); }
+  .home-hero-sub { color:var(--muted2); font-size:13px; }
+  .home-grid { display:grid; grid-template-columns:1fr 292px; }
+  .home-feed { padding:22px 28px; border-right:1px solid var(--border); }
+  .home-aside { padding:22px 18px; }
+  .sec-head {
+    font-family:'Syne',sans-serif; font-weight:700; font-size:11.5px;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--muted2);
+    margin-bottom:14px; display:flex; align-items:center; gap:8px;
+  }
+  .sec-head .bar { width:14px; height:2px; background:var(--red); flex-shrink:0; }
+
+  /* ── COLLAB CARD ── */
+  .collab-card {
+    background:var(--card); border:1px solid var(--border);
+    padding:18px; margin-bottom:10px; border-left:3px solid transparent;
+    transition:border-left-color 0.18s;
+  }
+  .collab-card:hover { border-left-color:var(--red); }
+  .collab-header { display:flex; align-items:flex-start; gap:11px; margin-bottom:11px; }
+  .collab-author { flex:1; }
+  .collab-author-name { font-weight:600; font-size:13px; margin-bottom:1px; }
+  .collab-meta { color:var(--muted); font-size:11.5px; }
+  .collab-title { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; margin-bottom:6px; }
+  .collab-desc { color:var(--muted2); font-size:13px; line-height:1.65; margin-bottom:12px; }
+  .tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:11px; }
+  .tag { background:var(--red-dim); border:1px solid var(--red-mid); color:var(--red); padding:2px 8px; font-size:11px; font-weight:600; letter-spacing:0.02em; }
+  .tag.green { background:rgba(0,190,130,0.08); border-color:rgba(0,190,130,0.2); color:#00be82; }
+  .tag.neutral { background:rgba(255,255,255,0.04); border-color:var(--border); color:var(--muted2); }
+  .roles { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .role-chip { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.03); border:1px solid var(--border); padding:3px 9px; font-size:11.5px; color:var(--muted2); }
+  .dot-o { width:5px; height:5px; background:#f5a623; flex-shrink:0; }
+  .dot-f { width:5px; height:5px; background:#00be82; flex-shrink:0; }
+  .collab-actions { display:flex; gap:6px; align-items:center; }
+  .btn-sm {
+    padding:6px 12px; font-size:11.5px; font-weight:600; cursor:pointer;
+    font-family:'DM Sans',sans-serif; transition:background 0.15s, color 0.15s, border-color 0.15s;
+    border:1px solid transparent;
+  }
+  .btn-sm.accent  { background:var(--red); color:white; border-color:var(--red); }
+  .btn-sm.accent:hover  { background:#b8001f; border-color:#b8001f; }
+  .btn-sm.outline { background:transparent; border-color:var(--border); color:var(--muted2); }
+  .btn-sm.outline:hover { border-color:var(--border2); color:var(--text); }
+  .btn-sm.ghost   { background:rgba(255,255,255,0.04); border-color:var(--border); color:var(--muted2); }
+  .btn-sm.ghost:hover { background:rgba(255,255,255,0.08); color:var(--text); }
+  .collab-likes { margin-left:auto; color:var(--muted); font-size:11.5px; }
+
+  /* ── EVENTS ── */
+  .filters { display:flex; gap:6px; padding:16px 28px; flex-wrap:wrap; border-bottom:1px solid var(--border); }
+  .filter-pill {
+    padding:5px 13px; font-size:12px; font-weight:500; cursor:pointer;
+    border:1px solid var(--border); background:transparent; color:var(--muted2);
+    transition:border-color 0.15s, color 0.15s, background 0.15s; font-family:'DM Sans',sans-serif;
+  }
+  .filter-pill:hover  { border-color:var(--red-mid); color:var(--text); }
+  .filter-pill.active { background:var(--red-dim); border-color:var(--red); color:var(--red); }
+  .events-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(265px,1fr)); gap:10px; padding:22px 28px; }
+  .event-card { background:var(--card); border:1px solid var(--border); overflow:hidden; transition:border-color 0.18s; }
+  .event-card:hover { border-color:var(--border2); }
+  .event-banner { height:86px; display:flex; align-items:center; justify-content:center; position:relative; }
+  .event-banner-label { font-family:'Syne',sans-serif; font-weight:800; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.4); }
+  .event-body { padding:14px; }
+  .event-date { display:inline-block; background:var(--red-dim); border:1px solid var(--red-mid); color:var(--red); padding:2px 8px; font-size:10.5px; font-weight:700; letter-spacing:0.04em; margin-bottom:7px; }
+  .event-title { font-family:'Syne',sans-serif; font-weight:700; font-size:13.5px; margin-bottom:5px; }
+  .event-desc  { color:var(--muted2); font-size:12px; line-height:1.55; margin-bottom:11px; }
+  .event-footer { display:flex; align-items:center; justify-content:space-between; }
+  .event-attendees { display:flex; align-items:center; }
+  .event-attendees .avatar { width:20px; height:20px; font-size:7px; border:2px solid var(--card); margin-left:-4px; }
+  .event-attendees .avatar:first-child { margin-left:0; }
+  .attendee-count { font-size:11px; color:var(--muted); margin-left:6px; }
+  .b1 { background:linear-gradient(135deg,#1a0a00,#2e1500); }
+  .b2 { background:linear-gradient(135deg,#140018,#220028); }
+  .b3 { background:linear-gradient(135deg,#001420,#002030); }
+  .b4 { background:linear-gradient(135deg,#0a1400,#162200); }
+  .b5 { background:linear-gradient(135deg,#18000a,#2a0012); }
+
+  /* ── CHAT ── */
+  .chat-layout { display:grid; grid-template-columns:242px 1fr; height:100vh; }
+  .chat-sidebar { background:var(--bg2); border-right:1px solid var(--border); padding:16px 12px; display:flex; flex-direction:column; overflow-y:auto; }
+  .chat-sidebar-title { font-family:'Syne',sans-serif; font-weight:700; font-size:14px; margin-bottom:12px; padding:0 4px; }
+  .chat-ai-badge {
+    display:flex; align-items:center; gap:9px; background:var(--red-dim); border:1px solid var(--red-mid);
+    padding:10px 9px; margin-bottom:12px; cursor:pointer; transition:background 0.15s;
+  }
+  .chat-ai-badge:hover, .chat-ai-badge.active { background:var(--red-mid); }
+  .ai-label { font-size:13px; font-weight:600; }
+  .ai-sublabel { font-size:10.5px; color:var(--muted2); }
+  .chat-divider { font-size:9.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); padding:8px 4px; font-weight:600; margin-top:4px; }
+  .chat-item { display:flex; align-items:center; gap:9px; padding:8px 8px; cursor:pointer; margin-bottom:1px; transition:background 0.15s; }
+  .chat-item:hover  { background:var(--bg3); }
+  .chat-item.active { background:rgba(255,255,255,0.05); }
+  .chat-item-info { flex:1; min-width:0; }
+  .chat-item-name    { font-size:13px; font-weight:600; margin-bottom:1px; }
+  .chat-item-preview { font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chat-item-time    { font-size:10.5px; color:var(--muted); flex-shrink:0; }
+  .chat-main { display:flex; flex-direction:column; overflow:hidden; }
+  .chat-topbar {
+    padding:13px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;
+    background:rgba(12,13,16,0.94); backdrop-filter:blur(14px); flex-shrink:0;
+  }
+  .chat-partner-name   { font-family:'Syne',sans-serif; font-weight:700; font-size:14px; }
+  .chat-partner-status { font-size:11px; color:#00be82; display:flex; align-items:center; gap:4px; }
+  .status-dot { width:6px; height:6px; background:#00be82; flex-shrink:0; }
+  .chat-messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px; }
+  .msg { display:flex; gap:8px; max-width:72%; }
+  .msg.own { flex-direction:row-reverse; align-self:flex-end; }
+  .msg .avatar { width:26px; height:26px; font-size:9px; flex-shrink:0; align-self:flex-end; }
+  .msg-bubble { padding:9px 12px; font-size:13px; line-height:1.6; background:var(--card); border:1px solid var(--border); }
+  .msg.own .msg-bubble  { background:var(--red-dim); border-color:var(--red-mid); }
+  .msg-ai .msg-bubble   { background:rgba(212,0,42,0.07); border-color:var(--red-mid); }
+  .msg-time { font-size:10px; color:var(--muted); margin-top:3px; }
+  .msg.own .msg-time { text-align:right; }
+  .chat-input-bar { padding:13px 20px; border-top:1px solid var(--border); display:flex; align-items:center; gap:7px; flex-shrink:0; }
+  .chat-input {
+    flex:1; background:var(--card); border:1px solid var(--border); padding:10px 13px;
+    color:var(--text); font-family:'DM Sans',sans-serif; font-size:13.5px; outline:none; transition:border-color 0.18s;
+  }
+  .chat-input:focus { border-color:var(--red); }
+  .chat-send { width:36px; height:36px; background:var(--red); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:white; transition:background 0.15s; flex-shrink:0; }
+  .chat-send:hover { background:#b8001f; }
+  .quick-replies { display:flex; flex-wrap:wrap; gap:6px; margin-left:34px; }
+
+  /* ── PROFILE ── */
+  .profile-layout { display:grid; grid-template-columns:272px 1fr; }
+  .profile-left { padding:26px 20px; border-right:1px solid var(--border); }
+  .profile-cover { height:90px; margin-bottom:-32px; background:linear-gradient(135deg,#1a0007,#3d0011); position:relative; overflow:hidden; }
+  .profile-cover::after { content:''; position:absolute; inset:0; background:repeating-linear-gradient(90deg,transparent,transparent 38px,rgba(212,0,42,0.07) 38px,rgba(212,0,42,0.07) 39px); }
+  .profile-avatar { width:68px; height:68px; font-family:'Syne',sans-serif; font-weight:800; font-size:21px; color:white; display:flex; align-items:center; justify-content:center; background:var(--red); margin:0 auto 10px; border:3px solid var(--bg2); position:relative; z-index:1; }
+  .profile-name   { font-family:'Syne',sans-serif; font-weight:800; font-size:18px; text-align:center; margin-bottom:3px; }
+  .profile-handle { color:var(--muted); font-size:12px; text-align:center; margin-bottom:9px; }
+  .profile-bio    { color:var(--muted2); font-size:13px; line-height:1.6; text-align:center; margin-bottom:14px; }
+  .profile-stats  { display:flex; margin-bottom:16px; border:1px solid var(--border); }
+  .profile-stat   { text-align:center; padding:9px 0; flex:1; border-right:1px solid var(--border); }
+  .profile-stat:last-child { border-right:none; }
+  .profile-stat-val { font-family:'Syne',sans-serif; font-weight:700; font-size:16px; }
+  .profile-stat-lbl { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.05em; }
+  .interest-label { font-size:9.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+  .profile-interests { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:14px; }
+  .interest-tag { background:var(--red-dim); border:1px solid var(--red-mid); color:var(--red); padding:3px 8px; font-size:11px; font-weight:500; cursor:pointer; transition:background 0.15s; }
+  .interest-tag:hover { background:var(--red-mid); }
+  .interest-tag.removable::after { content:' ×'; opacity:0.6; }
+  .btn-edit { width:100%; padding:8px; border:1px solid var(--border); background:transparent; color:var(--text); font-family:'DM Sans',sans-serif; font-weight:600; font-size:13px; cursor:pointer; transition:background 0.15s, border-color 0.15s; }
+  .btn-edit:hover { background:var(--bg3); border-color:var(--border2); }
+  .profile-right { padding:26px; }
+  .prof-sec-title { font-family:'Syne',sans-serif; font-weight:700; font-size:11.5px; letter-spacing:0.07em; text-transform:uppercase; color:var(--muted2); margin-bottom:13px; display:flex; align-items:center; justify-content:space-between; }
+  .users-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:9px; margin-bottom:26px; }
+  .user-card { background:var(--card); border:1px solid var(--border); padding:14px; text-align:center; transition:border-color 0.18s; }
+  .user-card:hover { border-color:var(--border2); }
+  .user-card .avatar { width:40px; height:40px; font-size:13px; margin:0 auto 8px; }
+  .user-card-name  { font-weight:600; font-size:12.5px; margin-bottom:1px; }
+  .user-card-role  { color:var(--muted); font-size:10.5px; margin-bottom:8px; }
+  .user-card-tags  { display:flex; flex-wrap:wrap; gap:3px; justify-content:center; margin-bottom:8px; }
+  .mini-tag        { background:var(--bg3); color:var(--muted2); padding:2px 6px; font-size:10px; }
+  .btn-follow { padding:5px 11px; font-size:11px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; background:transparent; border:1px solid var(--red-mid); color:var(--red); transition:background 0.15s, color 0.15s; }
+  .btn-follow:hover, .btn-follow.following { background:var(--red); color:white; border-color:var(--red); }
+
+  /* ── COLLABS PAGE ── */
+  .collabs-layout { display:grid; grid-template-columns:1fr 272px; }
+  .collabs-feed  { padding:18px 26px; border-right:1px solid var(--border); }
+  .collabs-aside { padding:18px 16px; }
+  .create-post-box { background:var(--card); border:1px solid var(--border); padding:13px; margin-bottom:14px; }
+  .create-post-row { display:flex; gap:8px; align-items:center; }
+  .create-post-input { flex:1; background:var(--bg3); border:1px solid var(--border); padding:8px 11px; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; outline:none; transition:border-color 0.18s; }
+  .create-post-input:focus { border-color:var(--red); color:var(--text); }
+  .aside-card { background:var(--card); border:1px solid var(--border); padding:13px; margin-bottom:10px; }
+  .aside-card-title { font-family:'Syne',sans-serif; font-weight:700; font-size:11px; letter-spacing:0.07em; text-transform:uppercase; color:var(--muted2); margin-bottom:9px; }
+  .skill-item { display:flex; align-items:center; gap:9px; padding:6px 0; border-bottom:1px solid var(--border); }
+  .skill-item:last-child { border-bottom:none; }
+  .skill-dot { width:6px; height:6px; background:var(--red); flex-shrink:0; }
+  .skill-name  { font-size:13px; font-weight:500; }
+  .skill-count { font-size:11px; color:var(--muted); }
+  .trend-up    { color:#00be82; font-size:11px; font-weight:700; margin-left:auto; }
+
+  /* ── MODAL ── */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(5px); z-index:100; display:none; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--bg2); border:1px solid var(--border2); padding:24px; width:475px; max-height:85vh; overflow-y:auto; animation:fadeUp 0.2s ease both; box-shadow:0 28px 60px rgba(0,0,0,0.6); }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .modal-title-row { display:flex; align-items:center; gap:0; }
+  .modal-red-bar { width:3px; height:18px; background:var(--red); margin-right:9px; flex-shrink:0; }
+  .modal-title { font-family:'Syne',sans-serif; font-weight:700; font-size:15.5px; }
+  .modal-close { width:28px; height:28px; border:1px solid var(--border); background:none; cursor:pointer; color:var(--muted2); font-size:13px; display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
+  .modal-close:hover { background:var(--bg3); color:var(--text); }
+  .form-group { margin-bottom:13px; }
+  .form-group label { display:block; font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.09em; margin-bottom:5px; }
+  .form-input { width:100%; background:var(--bg3); border:1px solid var(--border); padding:9px 12px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13.5px; outline:none; transition:border-color 0.18s; }
+  .form-input:focus { border-color:var(--red); }
+  textarea.form-input { resize:vertical; min-height:72px; }
+  .roles-builder { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:7px; }
+  .role-add-chip { border:1px dashed var(--border2); padding:4px 9px; font-size:11.5px; color:var(--muted2); cursor:pointer; transition:border-color 0.15s, color 0.15s; background:none; font-family:'DM Sans',sans-serif; }
+  .role-add-chip:hover { border-color:var(--red); color:var(--red); }
+  .modal-actions { display:flex; gap:7px; margin-top:16px; }
+  .btn-modal-primary { flex:1; padding:10px; border:none; background:var(--red); color:white; font-family:'Syne',sans-serif; font-weight:700; font-size:13px; cursor:pointer; transition:background 0.15s; }
+  .btn-modal-primary:hover { background:#b8001f; }
+  .btn-modal-cancel { padding:10px 16px; border:1px solid var(--border); background:transparent; color:var(--muted2); font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; transition:background 0.15s; }
+  .btn-modal-cancel:hover { background:var(--bg3); }
+  .tag-input-row { display:flex; gap:6px; }
+  .tag-input-row input { flex:1; }
+  .current-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
+
+  /* ── TOAST ── */
+  .notify-toast { position:fixed; bottom:26px; right:26px; background:var(--bg2); border:1px solid var(--red); border-left:4px solid var(--red); padding:11px 15px; font-size:13px; z-index:200; transform:translateY(50px); opacity:0; transition:all 0.26s ease; display:flex; align-items:center; gap:8px; }
+  .notify-toast.show { transform:none; opacity:1; }
+  .notify-toast .checkmark { color:#00be82; font-weight:700; }
+
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--bg3); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-page" class="page flex-page active">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="shield" style="width:34px;height:38px"><div class="shield-text" style="font-size:14px">M</div></div>
+      <div class="login-logo-text">MDX <span>Collab</span></div>
+    </div>
+    <p class="login-tagline">Your student collaboration hub — connect, create, and build at Middlesex University London.</p>
+    <div class="input-group"><label>Student Email</label><input type="email" placeholder="m.student@mdx.ac.uk"></div>
+    <div class="input-group"><label>Password</label><input type="password" placeholder="••••••••"></div>
+    <button class="btn-primary" onclick="goToApp()">Sign In</button>
+    <div class="divider">or</div>
+    <button class="btn-ghost" onclick="goToApp()">Continue as Guest</button>
+    <div class="login-footer">No account? <button class="link-btn" onclick="goToApp()">Sign up with student ID</button></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-page" class="page flex-page">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="shield" style="width:28px;height:32px"><div class="shield-text" style="font-size:12px">M</div></div>
+      <div class="sidebar-logo-text">MDX <span>Collab</span></div>
+    </div>
+    <div class="nav-label">Main</div>
+    <button class="nav-item active" onclick="showSection('home',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>Home
+    </button>
+    <button class="nav-item" onclick="showSection('collabs',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span>Collabs
+      <span class="badge">8</span>
+    </button>
+    <button class="nav-item" onclick="showSection('events',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="3" y="4" width="18" height="18"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Events
+    </button>
+    <button class="nav-item" onclick="showSection('chat',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>Messages
+      <span class="badge">3</span>
+    </button>
+    <div class="nav-label" style="margin-top:12px">Account</div>
+    <button class="nav-item" onclick="showSection('profile',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>My Profile
+    </button>
+    <button class="nav-item" onclick="showSection('discover',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>Discover
+    </button>
+    <div class="sidebar-spacer"></div>
+    <button class="sidebar-user" onclick="showSection('profile',null)">
+      <div class="avatar av-red" style="width:30px;height:30px;font-size:10px">AM</div>
+      <div><div class="sidebar-user-name">Alex Morgan</div><div class="sidebar-user-role">Game Design · Y2</div></div>
+    </button>
+  </nav>
+
+  <div class="main-content">
+
+    <!-- HOME -->
+    <div id="sec-home" class="section active">
+      <div class="topbar">
+        <div class="topbar-title">Good morning, <span>Alex</span></div>
+        <div class="topbar-actions">
+          <div class="search-bar"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Search students, collabs…"></div>
+          <div class="icon-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+        </div>
+      </div>
+      <div class="home-hero">
+        <div class="home-hero-greeting">Tuesday, 3 March 2026</div>
+        <div class="home-hero-name">Welcome back, <span>Alex</span></div>
+        <div class="home-hero-sub">Here is what is happening on campus today.</div>
+      </div>
+      <div class="home-grid">
+        <div class="home-feed">
+          <div class="sec-head"><span class="bar"></span>Recent Collabs</div>
+          <div class="collab-card">
+            <div class="collab-header">
+              <div class="avatar av-red" style="width:36px;height:36px;font-size:12px">JK</div>
+              <div class="collab-author"><div class="collab-author-name">Jamie Kim</div><div class="collab-meta">Game Design · 2 hours ago</div></div>
+              <div class="tags"><span class="tag">Game Dev</span></div>
+            </div>
+            <div class="collab-title">Indie Horror Game — "Signal Lost"</div>
+            <div class="collab-desc">Building a first-person psychological horror game set in an abandoned radio tower. Unity-based, targeting a 3-month build for Game Jam submission.</div>
+            <div class="roles"><div class="role-chip"><span class="dot-o"></span>Graphic Designer</div><div class="role-chip"><span class="dot-o"></span>Music Producer</div><div class="role-chip"><span class="dot-f"></span>Developer (filled)</div></div>
+            <div class="collab-actions">
+              <button class="btn-sm accent" onclick="showToast('Join request sent!')">Request to Join</button>
+              <button class="btn-sm outline" onclick="showSection('chat',null)">Message Host</button>
+              <button class="btn-sm ghost" onclick="showToast('Invite link copied!')">Invite</button>
+              <span class="collab-likes">24 likes</span>
+            </div>
+          </div>
+          <div class="collab-card">
+            <div class="collab-header">
+              <div class="avatar av-mid" style="width:36px;height:36px;font-size:12px">SR</div>
+              <div class="collab-author"><div class="collab-author-name">Sofia Reyes</div><div class="collab-meta">Music Technology · 5 hours ago</div></div>
+              <div class="tags"><span class="tag">Music</span></div>
+            </div>
+            <div class="collab-title">Electronic Album — Cross-Faculty Art Project</div>
+            <div class="collab-desc">Creating an experimental electronic album blending generative visuals and soundscapes. Need a motion graphics artist and a web developer.</div>
+            <div class="roles"><div class="role-chip"><span class="dot-o"></span>Motion Graphics Artist</div><div class="role-chip"><span class="dot-o"></span>Web Developer</div></div>
+            <div class="collab-actions">
+              <button class="btn-sm accent" onclick="showToast('Join request sent!')">Request to Join</button>
+              <button class="btn-sm outline" onclick="showSection('chat',null)">Message Host</button>
+              <button class="btn-sm ghost" onclick="showToast('Invite link copied!')">Invite</button>
+              <span class="collab-likes">41 likes</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-aside">
+          <div class="sec-head"><span class="bar"></span>Upcoming Events</div>
+          <div class="aside-card">
+            <div style="margin-bottom:12px"><div class="event-date">Mar 8 · Tomorrow</div><div style="font-weight:600;font-size:13px;margin:3px 0 2px">Game Dev Hackathon</div><div style="color:var(--muted);font-size:11.5px">48h build challenge · MDX London</div></div>
+            <div style="margin-bottom:12px"><div class="event-date">Mar 12</div><div style="font-weight:600;font-size:13px;margin:3px 0 2px">Creative Tech Showcase</div><div style="color:var(--muted);font-size:11.5px">Portfolio and demo day · Cat Hill</div></div>
+            <div><div class="event-date">Mar 19</div><div style="font-weight:600;font-size:13px;margin:3px 0 2px">Music Production Meetup</div><div style="color:var(--muted);font-size:11.5px">Networking and jams · Studio A</div></div>
+          </div>
+          <div class="sec-head" style="margin-top:4px"><span class="bar"></span>Suggested Connections</div>
+          <div class="aside-card">
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div style="display:flex;align-items:center;gap:8px"><div class="avatar av-slate" style="width:28px;height:28px;font-size:9px">TP</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Tom Park</div><div style="font-size:10.5px;color:var(--muted)">Graphic Design · Y3</div></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+              <div style="display:flex;align-items:center;gap:8px"><div class="avatar av-muted" style="width:28px;height:28px;font-size:9px">EL</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Eva Lima</div><div style="font-size:10.5px;color:var(--muted)">Music Tech · Y2</div></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+              <div style="display:flex;align-items:center;gap:8px"><div class="avatar av-mid" style="width:28px;height:28px;font-size:9px">NB</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Noah Blake</div><div style="font-size:10.5px;color:var(--muted)">Film · Y1</div></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLLABS -->
+    <div id="sec-collabs" class="section">
+      <div class="topbar">
+        <div class="topbar-title"><span>Collabs</span></div>
+        <div class="topbar-actions">
+          <div class="search-bar"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Search collabs, skills…"></div>
+          <button class="btn-sm accent" onclick="openModal('create-collab-modal')">+ New Collab</button>
+        </div>
+      </div>
+      <div class="collabs-layout">
+        <div class="collabs-feed">
+          <div class="filters" style="border-bottom:none;padding-bottom:12px">
+            <button class="filter-pill active" onclick="setFilter(this)">All</button>
+            <button class="filter-pill" onclick="setFilter(this)">Game Dev</button>
+            <button class="filter-pill" onclick="setFilter(this)">Music</button>
+            <button class="filter-pill" onclick="setFilter(this)">Film &amp; Media</button>
+            <button class="filter-pill" onclick="setFilter(this)">Design</button>
+            <button class="filter-pill" onclick="setFilter(this)">Tech</button>
+          </div>
+          <div class="create-post-box">
+            <div class="create-post-row">
+              <div class="avatar av-red" style="width:30px;height:30px;font-size:10px">AM</div>
+              <input class="create-post-input" placeholder="Post a collab opportunity…" onfocus="openModal('create-collab-modal')" readonly>
+              <button class="btn-sm accent" onclick="openModal('create-collab-modal')">Post</button>
+            </div>
+          </div>
+          <div class="collab-card">
+            <div class="collab-header"><div class="avatar av-red" style="width:36px;height:36px;font-size:12px">JK</div><div class="collab-author"><div class="collab-author-name">Jamie Kim</div><div class="collab-meta">Game Design, Year 2 · 2 hours ago</div></div><div class="tags"><span class="tag">Game Dev</span><span class="tag green">Open</span></div></div>
+            <div class="collab-title">Indie Horror Game — "Signal Lost"</div>
+            <div class="collab-desc">Building a first-person psychological horror game set in an abandoned radio tower. Unity-based, targeting a 3-month build for a Game Jam submission.</div>
+            <div class="roles"><div class="role-chip"><span class="dot-o"></span>Graphic Designer</div><div class="role-chip"><span class="dot-o"></span>Music Producer</div><div class="role-chip"><span class="dot-f"></span>Developer (filled)</div></div>
+            <div class="collab-actions"><button class="btn-sm accent" onclick="showToast('Join request sent to Jamie!')">Request to Join</button><button class="btn-sm outline" onclick="showSection('chat',null)">Message Host</button><button class="btn-sm ghost" onclick="showToast('Invite link copied!')">Invite</button><span class="collab-likes">24 likes</span></div>
+          </div>
+          <div class="collab-card">
+            <div class="collab-header"><div class="avatar av-mid" style="width:36px;height:36px;font-size:12px">SR</div><div class="collab-author"><div class="collab-author-name">Sofia Reyes</div><div class="collab-meta">Music Technology, Year 3 · 5 hours ago</div></div><div class="tags"><span class="tag">Music</span><span class="tag green">Open</span></div></div>
+            <div class="collab-title">Electronic Album — Cross-Faculty Art Project</div>
+            <div class="collab-desc">Creating an experimental electronic album blending generative visuals and soundscapes. Targeting the end-of-year showcase.</div>
+            <div class="roles"><div class="role-chip"><span class="dot-o"></span>Motion Graphics Artist</div><div class="role-chip"><span class="dot-o"></span>Web Developer</div></div>
+            <div class="collab-actions"><button class="btn-sm accent" onclick="showToast('Join request sent to Sofia!')">Request to Join</button><button class="btn-sm outline" onclick="showSection('chat',null)">Message Host</button><button class="btn-sm ghost" onclick="showToast('Invite link copied!')">Invite</button><span class="collab-likes">41 likes</span></div>
+          </div>
+          <div class="collab-card">
+            <div class="collab-header"><div class="avatar av-slate" style="width:36px;height:36px;font-size:12px">DW</div><div class="collab-author"><div class="collab-author-name">Daniel Webb</div><div class="collab-meta">Film Production, Year 1 · 1 day ago</div></div><div class="tags"><span class="tag">Film</span><span class="tag green">Open</span></div></div>
+            <div class="collab-title">Short Film — "Fragments" (Drama / Sci-Fi)</div>
+            <div class="collab-desc">15-minute short film. Script finalised. Need a composer, a VFX artist, and an editor to complete the team.</div>
+            <div class="roles"><div class="role-chip"><span class="dot-o"></span>Composer</div><div class="role-chip"><span class="dot-o"></span>VFX Artist</div><div class="role-chip"><span class="dot-o"></span>Editor</div></div>
+            <div class="collab-actions"><button class="btn-sm accent" onclick="showToast('Join request sent to Daniel!')">Request to Join</button><button class="btn-sm outline" onclick="showSection('chat',null)">Message Host</button><button class="btn-sm ghost" onclick="showToast('Invite link copied!')">Invite</button><span class="collab-likes">17 likes</span></div>
+          </div>
+        </div>
+        <div class="collabs-aside">
+          <div class="aside-card">
+            <div class="aside-card-title">Trending Skills Needed</div>
+            <div class="skill-item"><span class="skill-dot"></span><div style="flex:1"><div class="skill-name">Graphic Design</div><div class="skill-count">14 open spots</div></div><span class="trend-up">+4</span></div>
+            <div class="skill-item"><span class="skill-dot"></span><div style="flex:1"><div class="skill-name">Music Production</div><div class="skill-count">9 open spots</div></div><span class="trend-up">+2</span></div>
+            <div class="skill-item"><span class="skill-dot"></span><div style="flex:1"><div class="skill-name">Web Development</div><div class="skill-count">7 open spots</div></div><span class="trend-up">+3</span></div>
+            <div class="skill-item"><span class="skill-dot"></span><div style="flex:1"><div class="skill-name">Video Editing</div><div class="skill-count">5 open spots</div></div><span class="trend-up">+1</span></div>
+          </div>
+          <div class="aside-card">
+            <div class="aside-card-title">Matched for You</div>
+            <p style="font-size:12px;color:var(--muted2);margin-bottom:9px">Based on your interests, these collabs are looking for your skills.</p>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="background:var(--bg3);padding:8px;font-size:12px"><div style="font-weight:600;margin-bottom:1px">Signal Lost — Game Dev</div><div style="color:var(--muted)">Needs: Level Designer</div></div>
+              <div style="background:var(--bg3);padding:8px;font-size:12px"><div style="font-weight:600;margin-bottom:1px">Fragments — Short Film</div><div style="color:var(--muted)">Needs: VFX Artist</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVENTS -->
+    <div id="sec-events" class="section">
+      <div class="topbar">
+        <div class="topbar-title"><span>Events</span></div>
+        <div class="topbar-actions"><div class="search-bar"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Search events…"></div></div>
+      </div>
+      <div class="filters">
+        <button class="filter-pill active" onclick="setFilter(this)">All Events</button>
+        <button class="filter-pill" onclick="setFilter(this)">Workshops</button>
+        <button class="filter-pill" onclick="setFilter(this)">Hackathons</button>
+        <button class="filter-pill" onclick="setFilter(this)">Showcases</button>
+        <button class="filter-pill" onclick="setFilter(this)">Social</button>
+        <button class="filter-pill" onclick="setFilter(this)">Talks</button>
+      </div>
+      <div class="events-grid">
+        <div class="event-card"><div class="event-banner b1"><div class="event-banner-label">Hackathon</div></div><div class="event-body"><div class="event-date">Mar 8–9 · Tomorrow</div><div class="event-title">Game Dev Hackathon 2025</div><div class="event-desc">48-hour build challenge. Form teams of up to 4, pick a theme, and ship a playable game. Prizes for top 3 teams.</div><div class="event-footer"><div class="event-attendees"><div class="avatar av-red" style="width:20px;height:20px;font-size:7px">J</div><div class="avatar av-mid" style="width:20px;height:20px;font-size:7px;border:2px solid var(--card);margin-left:-4px">S</div><span class="attendee-count">+38</span></div><button class="btn-sm accent" onclick="showToast('Signed up for Game Dev Hackathon!')">Sign Up</button></div></div></div>
+        <div class="event-card"><div class="event-banner b2"><div class="event-banner-label">Showcase</div></div><div class="event-body"><div class="event-date">Mar 12 · Friday</div><div class="event-title">Creative Tech Showcase</div><div class="event-desc">End-of-semester showcase featuring student work across design, film, music, and tech. Portfolio demos welcome.</div><div class="event-footer"><div class="event-attendees"><div class="avatar av-slate" style="width:20px;height:20px;font-size:7px">T</div><span class="attendee-count">+62</span></div><button class="btn-sm accent" onclick="showToast('Signed up for Creative Tech Showcase!')">Sign Up</button></div></div></div>
+        <div class="event-card"><div class="event-banner b3"><div class="event-banner-label">Social</div></div><div class="event-body"><div class="event-date">Mar 19 · Thursday</div><div class="event-title">Music Production Meetup</div><div class="event-desc">Informal networking for music tech and production students. Bring your beats, share projects, find collaborators.</div><div class="event-footer"><div class="event-attendees"><div class="avatar av-muted" style="width:20px;height:20px;font-size:7px">N</div><span class="attendee-count">+21</span></div><button class="btn-sm accent" onclick="showToast('Signed up for Music Meetup!')">Sign Up</button></div></div></div>
+        <div class="event-card"><div class="event-banner b4"><div class="event-banner-label">Screening</div></div><div class="event-body"><div class="event-date">Mar 25 · Tuesday</div><div class="event-title">Film Screening Night</div><div class="event-desc">Student film screening and Q&amp;A with MDX Film alumni. Submit short films for consideration by 20 March.</div><div class="event-footer"><div class="event-attendees"><div class="avatar av-red" style="width:20px;height:20px;font-size:7px">A</div><span class="attendee-count">+29</span></div><button class="btn-sm accent" onclick="showToast('Signed up for Film Screening!')">Sign Up</button></div></div></div>
+        <div class="event-card"><div class="event-banner b5"><div class="event-banner-label">Workshop</div></div><div class="event-body"><div class="event-date">Apr 2 · Wednesday</div><div class="event-title">AI &amp; Creativity Workshop</div><div class="event-desc">Hands-on session exploring generative AI tools for creative students. Image generation, audio synthesis, and writing tools.</div><div class="event-footer"><div class="event-attendees"><div class="avatar av-slate" style="width:20px;height:20px;font-size:7px">M</div><span class="attendee-count">+44</span></div><button class="btn-sm accent" onclick="showToast('Signed up for AI Workshop!')">Sign Up</button></div></div></div>
+        <div class="event-card"><div class="event-banner b1"><div class="event-banner-label">Talk</div></div><div class="event-body"><div class="event-date">Apr 10 · Thursday</div><div class="event-title">Industry Talk: UX at Scale</div><div class="event-desc">Guest lecture from a senior designer at a London tech studio. Design systems, accessibility, and career paths.</div><div class="event-footer"><div class="event-attendees"><div class="avatar av-muted" style="width:20px;height:20px;font-size:7px">R</div><span class="attendee-count">+55</span></div><button class="btn-sm accent" onclick="showToast('Signed up for UX Talk!')">Sign Up</button></div></div></div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="sec-chat" class="section">
+      <div class="chat-layout">
+        <div class="chat-sidebar">
+          <div class="chat-sidebar-title">Messages</div>
+          <div class="chat-ai-badge active" onclick="selectChat(this,'Collab AI Assistant','AI')">
+            <div class="shield" style="width:26px;height:30px"><div class="shield-text" style="font-size:11px">AI</div></div>
+            <div><div class="ai-label">Collab AI</div><div class="ai-sublabel">Ask me anything</div></div>
+          </div>
+          <div class="chat-divider">Direct Messages</div>
+          <div class="chat-item" onclick="selectChat(this,'Jamie Kim','JK')"><div class="avatar av-red" style="width:28px;height:28px;font-size:9px">JK</div><div class="chat-item-info"><div class="chat-item-name">Jamie Kim</div><div class="chat-item-preview">Are you interested in the project?</div></div><div class="chat-item-time">2h</div></div>
+          <div class="chat-item" onclick="selectChat(this,'Sofia Reyes','SR')"><div class="avatar av-mid" style="width:28px;height:28px;font-size:9px">SR</div><div class="chat-item-info"><div class="chat-item-name">Sofia Reyes</div><div class="chat-item-preview">I loved your portfolio!</div></div><div class="chat-item-time">5h</div></div>
+          <div class="chat-item" onclick="selectChat(this,'Tom Park','TP')"><div class="avatar av-slate" style="width:28px;height:28px;font-size:9px">TP</div><div class="chat-item-info"><div class="chat-item-name">Tom Park</div><div class="chat-item-preview">Let me know when you're free</div></div><div class="chat-item-time">1d</div></div>
+          <div class="chat-divider">Groups</div>
+          <div class="chat-item" onclick="selectChat(this,'Signal Lost Team','SL')"><div class="avatar av-muted" style="width:28px;height:28px;font-size:8px">SLT</div><div class="chat-item-info"><div class="chat-item-name">Signal Lost Team</div><div class="chat-item-preview">Jamie: Let's sync up Thursday</div></div><div class="chat-item-time">3h</div></div>
+        </div>
+        <div class="chat-main">
+          <div class="chat-topbar">
+            <div class="shield" id="chat-avatar-display" style="width:26px;height:30px"><div class="shield-text" style="font-size:11px">AI</div></div>
+            <div><div class="chat-partner-name" id="chat-name-display">Collab AI Assistant</div><div class="chat-partner-status"><span class="status-dot"></span>Always online</div></div>
+          </div>
+          <div class="chat-messages" id="chat-messages-area">
+            <div class="msg msg-ai">
+              <div class="shield" style="width:26px;height:30px;flex-shrink:0;align-self:flex-end"><div class="shield-text" style="font-size:11px">AI</div></div>
+              <div><div class="msg-bubble">Hello Alex. I am <strong>Collab AI</strong>, your MDX campus assistant. I can help you find collaborators, discover upcoming events, or answer questions about student services. What would you like to explore?</div><div class="msg-time">Just now</div></div>
+            </div>
+            <div class="quick-replies">
+              <button class="btn-sm outline" onclick="sendQuickMsg(this)">Find collabs for game dev</button>
+              <button class="btn-sm outline" onclick="sendQuickMsg(this)">What events are coming up?</button>
+              <button class="btn-sm outline" onclick="sendQuickMsg(this)">Help me write a collab post</button>
+            </div>
+          </div>
+          <div class="chat-input-bar">
+            <input class="chat-input" id="chat-input-field" placeholder="Message Collab AI…" onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="chat-send" onclick="sendChat()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="sec-profile" class="section">
+      <div class="topbar">
+        <div class="topbar-title"><span>My Profile</span></div>
+        <div class="topbar-actions"><button class="btn-sm accent" onclick="openModal('edit-profile-modal')">Edit Profile</button></div>
+      </div>
+      <div class="profile-layout">
+        <div class="profile-left">
+          <div class="profile-cover"></div>
+          <div style="text-align:center;margin-top:36px">
+            <div class="profile-avatar">AM</div>
+            <div class="profile-name">Alex Morgan</div>
+            <div class="profile-handle">@alexmorgan · Game Design, Year 2</div>
+            <div class="profile-bio">Game designer and level builder. Interested in horror games, procedural generation, and storytelling through mechanics.</div>
+            <div class="profile-stats">
+              <div class="profile-stat"><div class="profile-stat-val">47</div><div class="profile-stat-lbl">Following</div></div>
+              <div class="profile-stat"><div class="profile-stat-val">83</div><div class="profile-stat-lbl">Followers</div></div>
+              <div class="profile-stat"><div class="profile-stat-val">5</div><div class="profile-stat-lbl">Collabs</div></div>
+            </div>
+          </div>
+          <div class="interest-label">Interests</div>
+          <div class="profile-interests">
+            <span class="interest-tag removable" onclick="removeTag(this)">#GameDev</span>
+            <span class="interest-tag removable" onclick="removeTag(this)">#HorrorGames</span>
+            <span class="interest-tag removable" onclick="removeTag(this)">#Unity3D</span>
+            <span class="interest-tag removable" onclick="removeTag(this)">#LevelDesign</span>
+            <span class="interest-tag removable" onclick="removeTag(this)">#IndieGame</span>
+            <span class="interest-tag removable" onclick="removeTag(this)">#Storytelling</span>
+          </div>
+          <button class="btn-edit" onclick="openModal('edit-profile-modal')">Edit Profile</button>
+        </div>
+        <div class="profile-right">
+          <div style="margin-bottom:24px">
+            <div class="prof-sec-title">My Collabs<button class="btn-sm accent" onclick="showSection('collabs',null);openModal('create-collab-modal')">+ New</button></div>
+            <div class="collab-card">
+              <div class="collab-header"><div class="avatar av-red" style="width:36px;height:36px;font-size:12px">AM</div><div class="collab-author"><div class="collab-author-name">Alex Morgan (You)</div><div class="collab-meta">Game Design · 3 days ago</div></div><div class="tags"><span class="tag">Game Dev</span><span class="tag green">Active</span></div></div>
+              <div class="collab-title">2D Platformer — "Ember Run"</div>
+              <div class="collab-desc">A 2D platformer with procedurally generated levels. Looking for a pixel artist and sound designer.</div>
+              <div class="roles"><div class="role-chip"><span class="dot-o"></span>Pixel Artist</div><div class="role-chip"><span class="dot-o"></span>Sound Designer</div></div>
+              <div class="collab-actions"><button class="btn-sm outline">Edit</button><button class="btn-sm ghost" onclick="showToast('3 join requests pending')">3 Requests</button></div>
+            </div>
+          </div>
+          <div class="prof-sec-title">Discover Students<div class="search-bar" style="width:180px"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Name or skill…"></div></div>
+          <div class="users-grid">
+            <div class="user-card"><div class="avatar av-slate" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">TP</div><div class="user-card-name">Tom Park</div><div class="user-card-role">Graphic Design · Y3</div><div class="user-card-tags"><span class="mini-tag">#Branding</span><span class="mini-tag">#Illustration</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+            <div class="user-card"><div class="avatar av-muted" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">EL</div><div class="user-card-name">Eva Lima</div><div class="user-card-role">Music Tech · Y2</div><div class="user-card-tags"><span class="mini-tag">#Production</span><span class="mini-tag">#Ableton</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+            <div class="user-card"><div class="avatar av-mid" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">NB</div><div class="user-card-name">Noah Blake</div><div class="user-card-role">Film · Y1</div><div class="user-card-tags"><span class="mini-tag">#Directing</span><span class="mini-tag">#Editing</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+            <div class="user-card"><div class="avatar av-red" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">MH</div><div class="user-card-name">Maya Hassan</div><div class="user-card-role">Animation · Y3</div><div class="user-card-tags"><span class="mini-tag">#3D</span><span class="mini-tag">#Rigging</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+            <div class="user-card"><div class="avatar av-slate" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">RC</div><div class="user-card-name">Ryan Chen</div><div class="user-card-role">Comp. Science · Y2</div><div class="user-card-tags"><span class="mini-tag">#React</span><span class="mini-tag">#APIs</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+            <div class="user-card"><div class="avatar av-muted" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">LW</div><div class="user-card-name">Lily Watts</div><div class="user-card-role">Fashion Design · Y2</div><div class="user-card-tags"><span class="mini-tag">#Textiles</span><span class="mini-tag">#Styling</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DISCOVER -->
+    <div id="sec-discover" class="section">
+      <div class="topbar">
+        <div class="topbar-title"><span>Discover</span></div>
+        <div class="topbar-actions"><div class="search-bar"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Search students, interests…"></div></div>
+      </div>
+      <div style="padding:26px">
+        <div class="sec-head"><span class="bar"></span>Browse by Interest</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:26px">
+          <button class="filter-pill active" onclick="setFilter(this)">#GameDev</button>
+          <button class="filter-pill" onclick="setFilter(this)">#MusicProduction</button>
+          <button class="filter-pill" onclick="setFilter(this)">#GraphicDesign</button>
+          <button class="filter-pill" onclick="setFilter(this)">#Film</button>
+          <button class="filter-pill" onclick="setFilter(this)">#Animation</button>
+          <button class="filter-pill" onclick="setFilter(this)">#WebDev</button>
+          <button class="filter-pill" onclick="setFilter(this)">#Photography</button>
+          <button class="filter-pill" onclick="setFilter(this)">#Fashion</button>
+          <button class="filter-pill" onclick="setFilter(this)">#AI</button>
+        </div>
+        <div class="sec-head"><span class="bar"></span>All Students</div>
+        <div class="users-grid">
+          <div class="user-card"><div class="avatar av-slate" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">TP</div><div class="user-card-name">Tom Park</div><div class="user-card-role">Graphic Design · Y3</div><div class="user-card-tags"><span class="mini-tag">#Branding</span><span class="mini-tag">#Illustration</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+          <div class="user-card"><div class="avatar av-muted" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">EL</div><div class="user-card-name">Eva Lima</div><div class="user-card-role">Music Tech · Y2</div><div class="user-card-tags"><span class="mini-tag">#Production</span><span class="mini-tag">#Ableton</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+          <div class="user-card"><div class="avatar av-mid" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">NB</div><div class="user-card-name">Noah Blake</div><div class="user-card-role">Film · Y1</div><div class="user-card-tags"><span class="mini-tag">#Directing</span><span class="mini-tag">#Editing</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+          <div class="user-card"><div class="avatar av-red" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">MH</div><div class="user-card-name">Maya Hassan</div><div class="user-card-role">Animation · Y3</div><div class="user-card-tags"><span class="mini-tag">#3D</span><span class="mini-tag">#Rigging</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+          <div class="user-card"><div class="avatar av-slate" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">RC</div><div class="user-card-name">Ryan Chen</div><div class="user-card-role">Comp. Science · Y2</div><div class="user-card-tags"><span class="mini-tag">#React</span><span class="mini-tag">#APIs</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+          <div class="user-card"><div class="avatar av-muted" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">LW</div><div class="user-card-name">Lily Watts</div><div class="user-card-role">Fashion · Y2</div><div class="user-card-tags"><span class="mini-tag">#Textiles</span><span class="mini-tag">#Styling</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+          <div class="user-card"><div class="avatar av-mid" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">JT</div><div class="user-card-name">Jake Turner</div><div class="user-card-role">Photography · Y1</div><div class="user-card-tags"><span class="mini-tag">#Portrait</span><span class="mini-tag">#Lightroom</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+          <div class="user-card"><div class="avatar av-red" style="width:40px;height:40px;font-size:12px;margin:0 auto 7px">AD</div><div class="user-card-name">Amara Diallo</div><div class="user-card-role">Architecture · Y3</div><div class="user-card-tags"><span class="mini-tag">#CAD</span><span class="mini-tag">#Rhino</span></div><button class="btn-follow" onclick="toggleFollow(this)">Follow</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="create-collab-modal" onclick="closeModalOutside(event,'create-collab-modal')">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title-row"><div class="modal-red-bar"></div><div class="modal-title">Post a Collab</div></div><button class="modal-close" onclick="closeModal('create-collab-modal')">✕</button></div>
+    <div class="form-group"><label>Project Title</label><input class="form-input" placeholder="e.g. Horror Game — Signal Lost"></div>
+    <div class="form-group"><label>Category</label><select class="form-input" style="appearance:none"><option>Game Dev</option><option>Music</option><option>Film and Media</option><option>Design</option><option>Tech</option><option>Art</option></select></div>
+    <div class="form-group"><label>Description</label><textarea class="form-input" placeholder="Describe your project and what collaborators you are looking for…"></textarea></div>
+    <div class="form-group"><label>Roles Needed</label><div class="roles-builder"><button class="role-add-chip">+ Graphic Designer</button><button class="role-add-chip">+ Music Producer</button><button class="role-add-chip">+ Developer</button><button class="role-add-chip">+ Add Role</button></div></div>
+    <div class="form-group"><label>Tags (comma separated)</label><input class="form-input" placeholder="#Unity3D, #HorrorGame, #IndieGame"></div>
+    <div class="modal-actions"><button class="btn-modal-cancel" onclick="closeModal('create-collab-modal')">Cancel</button><button class="btn-modal-primary" onclick="closeModal('create-collab-modal');showToast('Collab posted successfully!')">Post Collab</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="edit-profile-modal" onclick="closeModalOutside(event,'edit-profile-modal')">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title-row"><div class="modal-red-bar"></div><div class="modal-title">Edit Profile</div></div><button class="modal-close" onclick="closeModal('edit-profile-modal')">✕</button></div>
+    <div class="form-group"><label>Display Name</label><input class="form-input" value="Alex Morgan"></div>
+    <div class="form-group"><label>Username</label><input class="form-input" value="@alexmorgan"></div>
+    <div class="form-group"><label>Course and Year</label><input class="form-input" value="Game Design, Year 2"></div>
+    <div class="form-group"><label>Bio</label><textarea class="form-input">Game designer and level builder. Interested in horror games, procedural generation, and storytelling through mechanics.</textarea></div>
+    <div class="form-group">
+      <label>Add Interest Tag</label>
+      <div class="tag-input-row"><input class="form-input" id="tag-input" placeholder="#NewTag"><button class="btn-sm accent" onclick="addTag()">Add</button></div>
+      <div class="current-tags" id="current-tags">
+        <span class="interest-tag removable" onclick="removeTag(this)">#GameDev</span>
+        <span class="interest-tag removable" onclick="removeTag(this)">#HorrorGames</span>
+        <span class="interest-tag removable" onclick="removeTag(this)">#Unity3D</span>
+        <span class="interest-tag removable" onclick="removeTag(this)">#LevelDesign</span>
+        <span class="interest-tag removable" onclick="removeTag(this)">#IndieGame</span>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="btn-modal-cancel" onclick="closeModal('edit-profile-modal')">Cancel</button><button class="btn-modal-primary" onclick="closeModal('edit-profile-modal');showToast('Profile updated!')">Save Changes</button></div>
+  </div>
+</div>
+
+<div class="notify-toast" id="toast"><span class="checkmark">✓</span><span id="toast-msg">Action completed</span></div>
+
+<script>
+  function goToApp(){document.getElementById('login-page').classList.remove('active');document.getElementById('app-page').classList.add('active');}
+  function showSection(name,navEl){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));const sec=document.getElementById('sec-'+name);if(sec)sec.classList.add('active');if(navEl)navEl.classList.add('active');else document.querySelectorAll('.nav-item').forEach(n=>{if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+name+"'"))n.classList.add('active');});}
+  function setFilter(el){const p=el.closest('.filters')||el.closest('div');p.querySelectorAll('.filter-pill').forEach(x=>x.classList.remove('active'));el.classList.add('active');}
+  function openModal(id){document.getElementById(id).classList.add('open');}
+  function closeModal(id){document.getElementById(id).classList.remove('open');}
+  function closeModalOutside(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+  let toastTimer;
+  function showToast(msg){const t=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);}
+  function toggleFollow(btn){if(btn.classList.contains('following')){btn.classList.remove('following');btn.textContent='Follow';}else{btn.classList.add('following');btn.textContent='Following';showToast('Following added!');}}
+  const aiResponses=[
+    "idk",
+    "hello"
+  ];
+  let aiIndex=0;
+  function sendChat(){const input=document.getElementById('chat-input-field');const msg=input.value.trim();if(!msg)return;addMessage(msg,true);input.value='';setTimeout(()=>{addMessage(aiResponses[aiIndex%aiResponses.length],false,true);aiIndex++;},700);}
+  function sendQuickMsg(btn){const msg=btn.textContent.trim();btn.parentElement.style.display='none';addMessage(msg,true);setTimeout(()=>{addMessage(aiResponses[aiIndex%aiResponses.length],false,true);aiIndex++;},700);}
+  function addMessage(text,isOwn,isAI=false){const area=document.getElementById('chat-messages-area');const div=document.createElement('div');div.className='msg'+(isOwn?' own':'')+(isAI?' msg-ai':'');const now=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});const avHtml=isOwn?`<div class="avatar av-red" style="width:26px;height:26px;font-size:9px;flex-shrink:0;align-self:flex-end">AM</div>`:isAI?`<div class="shield" style="width:24px;height:28px;flex-shrink:0;align-self:flex-end"><div class="shield-text" style="font-size:10px">AI</div></div>`:`<div class="avatar av-slate" style="width:26px;height:26px;font-size:9px;flex-shrink:0;align-self:flex-end">?</div>`;div.innerHTML=avHtml+`<div><div class="msg-bubble">${text}</div><div class="msg-time">${now}</div></div>`;area.appendChild(div);area.scrollTop=area.scrollHeight;}
+  function selectChat(el,name,initials){document.querySelectorAll('.chat-item,.chat-ai-badge').forEach(i=>i.classList.remove('active'));el.classList.add('active');const isAI=initials==='AI';document.getElementById('chat-name-display').textContent=name;const av=document.getElementById('chat-avatar-display');if(isAI){av.outerHTML='<div class="shield" id="chat-avatar-display" style="width:26px;height:30px"><div class="shield-text" style="font-size:11px">AI</div></div>';}else{const newAv=document.createElement('div');newAv.id='chat-avatar-display';newAv.className='avatar av-red';newAv.style.cssText='width:26px;height:26px;font-size:9px;flex-shrink:0';newAv.textContent=initials.substring(0,2);document.getElementById('chat-avatar-display').replaceWith(newAv);}document.getElementById('chat-input-field').placeholder=isAI?'Message Collab AI…':'Message '+name+'…';}
+  function addTag(){const input=document.getElementById('tag-input');let val=input.value.trim();if(!val)return;if(!val.startsWith('#'))val='#'+val;const c=document.getElementById('current-tags');const s=document.createElement('span');s.className='interest-tag removable';s.setAttribute('onclick','removeTag(this)');s.textContent=val;c.appendChild(s);input.value='';showToast('Tag added: '+val);}
+  function removeTag(el){el.remove();showToast('Tag removed');}
+</script>
+</body>
+</html>
