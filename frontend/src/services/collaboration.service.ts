@@ -1,6 +1,8 @@
 import {
+  doc,
   collection,
   addDoc,
+  getDoc,
   getDocs,
   serverTimestamp,
   orderBy,
@@ -22,6 +24,12 @@ export const CollaborationService = {
     const q = query(collection(db, COLLECTION), orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Collaboration);
+  },
+
+  async getById(id: string): Promise<Collaboration | null> {
+    const snap = await getDoc(doc(db, COLLECTION, id));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() } as Collaboration;
   },
 
   async getByAuthor(authorId: string): Promise<Collaboration[]> {

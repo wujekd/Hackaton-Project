@@ -136,7 +136,7 @@ export default function Collaborations() {
               )}
 
               <div className="collab-actions">
-                <button className="btn-sm accent" type="button">Request to Join</button>
+                <Link className="btn-sm accent" to={`/collaborations/${collab.id}`}>Open</Link>
                 <Link
                   className="btn-sm outline"
                   to={

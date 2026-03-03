@@ -5,9 +5,11 @@ import RouteError from "./components/RouteError";
 import Home from "./views/Home";
 import Auth from "./views/Auth";
 import Collaborations from "./views/Collaborations";
+import CollaborationDetail from "./views/CollaborationDetail";
 import Events from "./views/Events";
+import EventDetail from "./views/EventDetail";
+import Schedule from "./views/Schedule";
 import Messages from "./views/Messages";
-import Discover from "./views/Discover";
 import CreateCollaboration from "./views/CreateCollaboration";
 import SuggestEvent from "./views/SuggestEvent";
 import Moderation from "./views/Moderation";
@@ -38,14 +40,29 @@ const router = createBrowserRouter([
         handle: { title: "New Collaboration", breadcrumb: "New Collaboration" } satisfies RouteHandle,
       },
       {
+        path: "collaborations/:collaborationId",
+        element: <CollaborationDetail />,
+        handle: { title: "Collab Detail", breadcrumb: "Collab Detail" } satisfies RouteHandle,
+      },
+      {
         path: "events",
         element: <Events />,
         handle: { title: "Events", breadcrumb: "Events" } satisfies RouteHandle,
       },
       {
+        path: "schedule",
+        element: <Schedule />,
+        handle: { title: "Schedule", breadcrumb: "Schedule" } satisfies RouteHandle,
+      },
+      {
         path: "events/suggest",
         element: <SuggestEvent />,
         handle: { title: "Suggest Event", breadcrumb: "Suggest Event" } satisfies RouteHandle,
+      },
+      {
+        path: "events/:eventId",
+        element: <EventDetail />,
+        handle: { title: "Event Detail", breadcrumb: "Event Detail" } satisfies RouteHandle,
       },
       {
         path: "messages",
@@ -56,11 +73,6 @@ const router = createBrowserRouter([
         path: "messages/:conversationId",
         element: <Messages />,
         handle: { title: "Messages", breadcrumb: "Messages" } satisfies RouteHandle,
-      },
-      {
-        path: "discover",
-        element: <Discover />,
-        handle: { title: "Discover", breadcrumb: "Discover" } satisfies RouteHandle,
       },
       {
         path: "admin/moderation",

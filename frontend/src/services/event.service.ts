@@ -2,6 +2,7 @@ import {
   collection,
   addDoc,
   doc,
+  getDoc,
   getDocs,
   updateDoc,
   serverTimestamp,
@@ -22,6 +23,12 @@ export const EventService = {
     const q = query(collection(db, EVENTS), orderBy("date", "asc"));
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as EventItem);
+  },
+
+  async getById(id: string): Promise<EventItem | null> {
+    const snap = await getDoc(doc(db, EVENTS, id));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() } as EventItem;
   },
 
   async submitProposal(

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import PollPlaceholder from "../components/PollPlaceholder";
 import { CollaborationService } from "../services/collaboration.service";
 import { EventService } from "../services/event.service";
 import { useAuthStore } from "../stores/auth.store";
@@ -209,7 +210,7 @@ export default function Home() {
               </div>
 
               <div className="collab-actions">
-                <button className="btn-sm accent" type="button">Request to Join</button>
+                <Link className="btn-sm accent" to={`/collaborations/${c.id}`}>Open</Link>
                 <Link
                   className="btn-sm outline"
                   to={`/messages?userId=${encodeURIComponent(c.authorId)}&userName=${encodeURIComponent(c.authorName)}`}
@@ -252,6 +253,11 @@ export default function Home() {
                     {ev.description}
                   </div>
                 )}
+                <div style={{ marginTop: 6 }}>
+                  <Link className="btn-sm outline" to={`/events/${ev.id}`}>
+                    Open
+                  </Link>
+                </div>
               </div>
             ))}
             <div className="home-upcoming-footer">
@@ -263,29 +269,9 @@ export default function Home() {
 
           <div className="sec-head home-suggest-head">
             <span className="bar" />
-            Suggested Connections
+            Campus Poll
           </div>
-          <div className="aside-card">
-            {[
-              { initials: "TP", name: "Tom Park", role: "Graphic Design - Y3", tone: "av-slate" },
-              { initials: "EL", name: "Eva Lima", role: "Music Tech - Y2", tone: "av-muted" },
-              { initials: "NB", name: "Noah Blake", role: "Film - Y1", tone: "av-mid" },
-            ].map((person) => (
-              <div
-                key={person.name}
-                className="home-suggestion-row"
-              >
-                <div className={`avatar ${person.tone}`} style={{ width: 28, height: 28, fontSize: 9 }}>
-                  {person.initials}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 600 }}>{person.name}</div>
-                  <div style={{ fontSize: 10.5, color: "var(--muted)" }}>{person.role}</div>
-                </div>
-                <button className="btn-follow" type="button">Follow</button>
-              </div>
-            ))}
-          </div>
+          <PollPlaceholder />
         </aside>
       </div>
     </div>

@@ -34,6 +34,15 @@ function CalendarIcon() {
   );
 }
 
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 16 14" />
+    </svg>
+  );
+}
+
 function MessageIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -47,15 +56,6 @@ function UserIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
 }
@@ -170,7 +170,7 @@ export default function Layout() {
   const role = profile?.admin ? "Admin" : user ? "Student Member" : "Guest";
   const unreadBadge = unreadTotal > 99 ? "99+" : unreadTotal > 0 ? String(unreadTotal) : undefined;
   const moreActive =
-    location.pathname.startsWith("/discover") ||
+    location.pathname.startsWith("/schedule") ||
     location.pathname.startsWith("/account") ||
     location.pathname.startsWith("/admin");
 
@@ -205,13 +205,13 @@ export default function Layout() {
             <NavItem to="/" end label="Home" icon={<HomeIcon />} />
             <NavItem to="/collaborations" label="Collabs" icon={<TeamIcon />} />
             <NavItem to="/events" label="Events" icon={<CalendarIcon />} />
+            <NavItem to="/schedule" label="Schedule" icon={<ClockIcon />} />
             <NavItem to="/messages" label="Messages" icon={<MessageIcon />} badge={unreadBadge} />
           </div>
 
           <div className="nav-label">Account</div>
           <div className="sidebar-nav-scroll">
             <NavItem to="/account" label="My Profile" icon={<UserIcon />} />
-            <NavItem to="/discover" label="Discover" icon={<SearchIcon />} />
             {profile?.admin && (
               <NavItem to="/admin/moderation" label="Moderation" icon={<GavelIcon />} />
             )}
@@ -318,11 +318,11 @@ export default function Layout() {
             <div className="mobile-more-links">
               <NavLink
                 className={({ isActive }) => `mobile-more-link${isActive ? " active" : ""}`}
-                to="/discover"
+                to="/schedule"
                 onClick={() => setIsMoreOpen(false)}
               >
-                <span className="nav-icon"><SearchIcon /></span>
-                Discover
+                <span className="nav-icon"><ClockIcon /></span>
+                Schedule
               </NavLink>
               <NavLink
                 className={({ isActive }) => `mobile-more-link${isActive ? " active" : ""}`}

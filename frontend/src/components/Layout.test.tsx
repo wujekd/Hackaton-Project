@@ -62,7 +62,6 @@ function renderLayout({
           { path: "collaborations", element: <div>Collabs view</div> },
           { path: "events", element: <div>Events view</div> },
           { path: "messages", element: <div>Messages view</div> },
-          { path: "discover", element: <div>Discover view</div> },
           { path: "account", element: <div>Account view</div> },
           { path: "admin/moderation", element: <div>Moderation view</div> },
           { path: "login", element: <div>Login view</div> },

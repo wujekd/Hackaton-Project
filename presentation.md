@@ -80,18 +80,6 @@ Naseer, F. et al. (2025). "Project based learning framework integrating industry
 
 > Student quote: "The multiple touchpoints working through ambiguous business challenges with industry veteran guidance allowed gradually improving how we frame recommendations, synthesize insights across disciplines and anticipate consequences — sharpening skills directly applicable for senior strategy roles."
 
-## The Core Insight
-
-Social apps connect people through feeds and likes. MDX Network connects people through action — building something together, suggesting an event, showing up. That's what actually leads to real relationships and real growth.
-
-## How It Works
-
-1. Sign up with email or Google
-2. Browse collaborations and upcoming events on the home page
-3. Create a collaboration or suggest an event
-4. Event suggestions get reviewed — approved ones go live for everyone
-5. Track your contributions from your profile
-
 ## Future Vision
 
 - Polls and voting on campus decisions
