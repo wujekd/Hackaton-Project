@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAuthStore } from "../stores/auth.store";
+import { useMessagingStore } from "../stores/messaging.store";
 
 function HomeIcon() {
   return (
@@ -130,6 +131,9 @@ export default function Layout() {
   const isMobile = useMediaQuery("(max-width: 1023px)");
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const { user, profile, signOut, loading } = useAuthStore();
+  const unreadTotal = useMessagingStore((state) => state.unreadTotal);
+  const listenConversations = useMessagingStore((state) => state.listenConversations);
+  const stopMessaging = useMessagingStore((state) => state.stopAll);
   const isAuthRoute = location.pathname.startsWith("/login");
 
   useEffect(() => {
@@ -152,9 +156,19 @@ export default function Layout() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isMobile, isMoreOpen]);
 
+  useEffect(() => {
+    if (!user) {
+      stopMessaging();
+      return;
+    }
+
+    listenConversations(user.uid);
+  }, [listenConversations, stopMessaging, user]);
+
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
   const initials = displayName.trim().slice(0, 2).toUpperCase() || "G";
   const role = profile?.admin ? "Admin" : user ? "Student Member" : "Guest";
+  const unreadBadge = unreadTotal > 99 ? "99+" : unreadTotal > 0 ? String(unreadTotal) : undefined;
   const moreActive =
     location.pathname.startsWith("/discover") ||
     location.pathname.startsWith("/account") ||
@@ -191,7 +205,7 @@ export default function Layout() {
             <NavItem to="/" end label="Home" icon={<HomeIcon />} />
             <NavItem to="/collaborations" label="Collabs" icon={<TeamIcon />} />
             <NavItem to="/events" label="Events" icon={<CalendarIcon />} />
-            <NavItem to="/messages" label="Messages" icon={<MessageIcon />} badge="3" />
+            <NavItem to="/messages" label="Messages" icon={<MessageIcon />} badge={unreadBadge} />
           </div>
 
           <div className="nav-label">Account</div>

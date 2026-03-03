@@ -5,7 +5,7 @@ import { EventService } from "../services/event.service";
 import { useAuthStore } from "../stores/auth.store";
 import type { Collaboration } from "../types/collaboration";
 import type { EventItem } from "../types/event";
-import { formatDateShort, formatRelativeDate } from "../utils/date";
+import { formatDateShort, formatRelativeDate, toDate } from "../utils/date";
 
 function nameInitials(name: string): string {
   const cleaned = name.trim();
@@ -38,9 +38,10 @@ export default function Home() {
 
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Student";
   const firstName = displayName.split(/[.\s_-]+/)[0] || "Student";
+  const normalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   const todayLabel = useMemo(
     () =>
-      new Date().toLocaleDateString(undefined, {
+      new Date().toLocaleDateString("en-GB", {
         weekday: "long",
         day: "numeric",
         month: "long",
@@ -49,6 +50,27 @@ export default function Home() {
     [],
   );
   const upcoming = events.slice(0, 3);
+  const nextCampusItem = useMemo(() => {
+    const now = Date.now();
+    const futureEvent = events.find((event) => {
+      const date = toDate(event.date);
+      return !!date && date.getTime() >= now;
+    });
+
+    if (futureEvent) {
+      return { event: futureEvent, date: toDate(futureEvent.date) };
+    }
+
+    if (events.length > 0) {
+      return { event: events[0], date: toDate(events[0].date) };
+    }
+
+    return null;
+  }, [events]);
+  const streakDays = 5;
+  const streakGoal = 7;
+  const streakProgress = Math.round((Math.min(streakDays, streakGoal) / streakGoal) * 100);
+  const streakRemaining = Math.max(streakGoal - streakDays, 0);
 
   return (
     <div className="page-view">
@@ -74,11 +96,63 @@ export default function Home() {
       </div>
 
       <div className="home-hero">
-        <div className="home-hero-greeting">{todayLabel}</div>
-        <div className="home-hero-name">
-          Welcome back, <span>{firstName}</span>
+        <div className="home-hero-content">
+          <div className="home-hero-copy">
+            <div className="home-hero-greeting">{todayLabel}</div>
+            <div className="home-hero-name">
+              Welcome back, <span>{normalizedFirstName}</span>
+            </div>
+            <div className="home-hero-sub">Here is what is happening across campus right now.</div>
+          </div>
+
+          <div className="home-hero-cards" aria-label="Campus quick overview">
+            <article className="home-hero-card">
+              <div className="home-hero-card-label">What&apos;s next</div>
+              {eventLoading && <div className="home-hero-card-title">Loading your schedule...</div>}
+              {!eventLoading && nextCampusItem && (
+                <>
+                  <div className="home-hero-card-title">{nextCampusItem.event.name}</div>
+                  {nextCampusItem.date && (
+                    <div className="home-hero-card-meta">
+                      {nextCampusItem.date.toLocaleDateString("en-GB", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                      })}{" "}
+                      at{" "}
+                      {nextCampusItem.date.toLocaleTimeString("en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+              {!eventLoading && !nextCampusItem && (
+                <>
+                  <div className="home-hero-card-title">No upcoming events yet</div>
+                  <div className="home-hero-card-meta">Join one to build your campus routine.</div>
+                </>
+              )}
+            </article>
+
+            <article className="home-hero-card">
+              <div className="home-hero-card-label">Study streak</div>
+              <div className="home-hero-card-title">{streakDays} day streak</div>
+              <div className="home-hero-card-meta">
+                {streakRemaining === 0
+                  ? "Weekly goal complete."
+                  : `${streakRemaining} more day${streakRemaining === 1 ? "" : "s"} to hit your weekly goal.`}
+              </div>
+              <div className="home-streak-track" role="presentation">
+                <span style={{ width: `${streakProgress}%` }} />
+              </div>
+              <div className="home-streak-foot">
+                {streakDays}/{streakGoal} days this week
+              </div>
+            </article>
+          </div>
         </div>
-        <div className="home-hero-sub">Here is what is happening across campus right now.</div>
       </div>
 
       <div className="home-grid">
@@ -136,7 +210,10 @@ export default function Home() {
 
               <div className="collab-actions">
                 <button className="btn-sm accent" type="button">Request to Join</button>
-                <Link className="btn-sm outline" to="/messages">
+                <Link
+                  className="btn-sm outline"
+                  to={`/messages?userId=${encodeURIComponent(c.authorId)}&userName=${encodeURIComponent(c.authorName)}`}
+                >
                   Message Host
                 </Link>
                 <button className="btn-sm ghost" type="button">Invite</button>

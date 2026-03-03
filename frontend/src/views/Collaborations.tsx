@@ -137,7 +137,13 @@ export default function Collaborations() {
 
               <div className="collab-actions">
                 <button className="btn-sm accent" type="button">Request to Join</button>
-                <Link className="btn-sm outline" to="/messages">
+                <Link
+                  className="btn-sm outline"
+                  to={
+                    `/messages?userId=${encodeURIComponent(collab.authorId)}` +
+                    `&userName=${encodeURIComponent(collab.authorName)}`
+                  }
+                >
                   Message Host
                 </Link>
                 <button className="btn-sm ghost" type="button">Invite</button>

@@ -470,6 +470,17 @@ select {
   background: linear-gradient(180deg, rgba(212, 0, 42, 0.04) 0%, transparent 100%);
 }
 
+.home-hero-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  gap: 14px;
+  align-items: end;
+}
+
+.home-hero-copy {
+  min-width: 0;
+}
+
 .home-hero-greeting {
   color: var(--muted2);
   font-size: 12.5px;
@@ -490,6 +501,63 @@ select {
 .home-hero-sub {
   color: var(--muted2);
   font-size: 13px;
+}
+
+.home-hero-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.home-hero-card {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015) 0%, rgba(255, 255, 255, 0) 100%), var(--card);
+  padding: 12px;
+  min-height: 120px;
+}
+
+.home-hero-card-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+
+.home-hero-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 5px;
+  line-height: 1.35;
+}
+
+.home-hero-card-meta {
+  font-size: 11.5px;
+  color: var(--muted2);
+  line-height: 1.45;
+}
+
+.home-streak-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.home-streak-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #a2f4d6 0%, #31d59d 100%);
+}
+
+.home-streak-foot {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .home-grid {
@@ -1034,6 +1102,32 @@ select {
   color: var(--muted);
 }
 
+.chat-item-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.chat-unread {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.chat-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 8px 10px;
+}
+
 .chat-main {
   display: flex;
   flex-direction: column;
@@ -1072,6 +1166,13 @@ select {
   gap: 12px;
 }
 
+.chat-thread-empty {
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px dashed var(--border2);
+  padding: 12px;
+}
+
 .msg {
   display: flex;
   gap: 8px;
@@ -1105,6 +1206,27 @@ select {
 .chat-input-bar {
   border-top: 1px solid var(--border);
   padding: 13px 20px;
+}
+
+.chat-input-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  padding: 10px 12px;
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: var(--red-mid);
 }
 
 .chat-placeholder {
@@ -1842,6 +1964,15 @@ select {
 @media (max-width: 1023px) {
   .topbar {
     padding: 14px 16px;
+  }
+
+  .home-hero-content {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .home-hero-cards {
+    grid-template-columns: 1fr;
   }
 
   .search-bar {
