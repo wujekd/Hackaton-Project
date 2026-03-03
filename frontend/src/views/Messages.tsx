@@ -1,17 +1,11 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { sendAiMessage, type AiChatHistory } from "../services/ai-chat.service";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAuthStore } from "../stores/auth.store";
 import { useMessagingStore } from "../stores/messaging.store";
 import type { ChatMessage, Conversation } from "../types/message";
 import { formatRelativeDate } from "../utils/date";
-
-interface PlaceholderMessage {
-  id: string;
-  sender: "ai" | "me";
-  text: string;
-  time: string;
-}
 
 interface ConversationView {
   id: string;
@@ -31,22 +25,27 @@ interface ThreadMessageView {
   time: string;
 }
 
-const AI_PLACEHOLDER_ID = "ai-placeholder";
+const AI_CONVERSATION_ID = "ai-assistant";
 
-const AI_THREAD_MESSAGES: PlaceholderMessage[] = [
-  {
-    id: "ai-1",
-    sender: "ai",
-    text: "Collab AI chatbot is reserved here and will be connected in a future release.",
-    time: "just now",
-  },
-  {
-    id: "ai-2",
-    sender: "me",
-    text: "Can you help me find music and game collaborators?",
-    time: "just now",
-  },
-];
+interface AiMessage {
+  id: string;
+  sender: "me" | "ai";
+  text: string;
+  time: string;
+}
+
+const AI_WELCOME_MESSAGE: AiMessage = {
+  id: "ai-welcome",
+  sender: "ai",
+  text: "Hi! I'm Collab AI. Ask me anything about collaborations, events, or university life.",
+  time: "just now",
+};
+
+let aiMessageCounter = 0;
+function nextAiMessageId(): string {
+  aiMessageCounter += 1;
+  return `ai-msg-${aiMessageCounter}`;
+}
 
 const AVATAR_TONES = ["av-red", "av-mid", "av-slate", "av-muted"];
 
@@ -110,25 +109,25 @@ function ConversationList({
           <div className="shield-text" style={{ fontSize: 11 }}>AI</div>
         </div>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600 }}>Collab AI (Coming Soon)</div>
-          <div style={{ fontSize: 10.5, color: "var(--muted2)" }}>Reserved chatbot slot</div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>Collab AI</div>
+          <div style={{ fontSize: 10.5, color: "var(--muted2)" }}>Your AI assistant</div>
         </div>
       </div>
 
       <div className="chat-divider">Direct Messages</div>
       <Link
-        className={`chat-item chat-item-link${activeId === AI_PLACEHOLDER_ID ? " active" : ""}`}
-        to={`/messages/${AI_PLACEHOLDER_ID}`}
+        className={`chat-item chat-item-link${activeId === AI_CONVERSATION_ID ? " active" : ""}`}
+        to={`/messages/${AI_CONVERSATION_ID}`}
       >
         <div className="avatar av-red" style={{ width: 28, height: 28, fontSize: 9 }}>
           AI
         </div>
         <div className="chat-item-info">
-          <div className="chat-item-name">Collab AI (Coming Soon)</div>
-          <div className="chat-item-preview">AI chatbot will be enabled in a future release.</div>
+          <div className="chat-item-name">Collab AI</div>
+          <div className="chat-item-preview">Ask me anything</div>
         </div>
         <div className="chat-item-meta">
-          <div className="chat-item-time">soon</div>
+          <div className="chat-item-time">now</div>
         </div>
       </Link>
       {loading && <div className="chat-empty">Loading conversations...</div>}
@@ -182,7 +181,7 @@ function ConversationThread({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   sending: boolean;
 }) {
-  const isAiConversation = conversation.id === AI_PLACEHOLDER_ID;
+  const isAiConversation = conversation.id === AI_CONVERSATION_ID;
 
   return (
     <section className="chat-main">
@@ -224,25 +223,31 @@ function ConversationThread({
             </div>
           </div>
         ))}
+        {isAiConversation && sending && (
+          <div className="msg" key="ai-thinking">
+            <div className="shield" style={{ width: 24, height: 28 }}>
+              <div className="shield-text" style={{ fontSize: 10 }}>AI</div>
+            </div>
+            <div>
+              <div className="msg-bubble" style={{ opacity: 0.6, fontStyle: "italic" }}>Thinking...</div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="chat-input-bar">
-        {isAiConversation ? (
-          <div className="chat-placeholder">AI chatbot will be enabled in a future release.</div>
-        ) : (
-          <form className="chat-input-form" onSubmit={onSubmit}>
-            <input
-              className="chat-input"
-              placeholder="Write a message..."
-              value={draft}
-              onChange={(event) => onDraftChange(event.target.value)}
-              disabled={sending}
-            />
-            <button className="btn-sm accent" type="submit" disabled={sending || !draft.trim()}>
-              {sending ? "Sending..." : "Send"}
-            </button>
-          </form>
-        )}
+        <form className="chat-input-form" onSubmit={onSubmit}>
+          <input
+            className="chat-input"
+            placeholder={isAiConversation ? "Ask Collab AI..." : "Write a message..."}
+            value={draft}
+            onChange={(event) => onDraftChange(event.target.value)}
+            disabled={sending}
+          />
+          <button className="btn-sm accent" type="submit" disabled={sending || !draft.trim()}>
+            {sending ? "Sending..." : "Send"}
+          </button>
+        </form>
       </div>
     </section>
   );
@@ -256,6 +261,11 @@ export default function Messages() {
   const { user, profile, loading: authLoading } = useAuthStore();
   const [composeValue, setComposeValue] = useState("");
   const [deepLinkError, setDeepLinkError] = useState<string | null>(null);
+
+  const [aiMessages, setAiMessages] = useState<AiMessage[]>([AI_WELCOME_MESSAGE]);
+  const [aiSending, setAiSending] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const aiHistoryRef = useRef<AiChatHistory[]>([]);
 
   const conversations = useMessagingStore((state) => state.conversations);
   const conversationsLoading = useMessagingStore((state) => state.conversationsLoading);
@@ -307,33 +317,33 @@ export default function Messages() {
 
   const normalizedRouteConversationId = conversationId?.trim() ?? "";
   const routeConversationIsKnown =
-    normalizedRouteConversationId === AI_PLACEHOLDER_ID ||
+    normalizedRouteConversationId === AI_CONVERSATION_ID ||
     directConversations.some((conversation) => conversation.id === normalizedRouteConversationId);
 
   const selectedConversationId = (() => {
     if (normalizedRouteConversationId) {
       if (routeConversationIsKnown) return normalizedRouteConversationId;
-      return directConversations[0]?.id ?? AI_PLACEHOLDER_ID;
+      return directConversations[0]?.id ?? AI_CONVERSATION_ID;
     }
     if (isMobile) return null;
-    return AI_PLACEHOLDER_ID;
+    return AI_CONVERSATION_ID;
   })();
 
-  const selectedConversation = selectedConversationId === AI_PLACEHOLDER_ID ?
+  const selectedConversation = selectedConversationId === AI_CONVERSATION_ID ?
     {
-      id: AI_PLACEHOLDER_ID,
+      id: AI_CONVERSATION_ID,
       initials: "AI",
-      name: "Collab AI (Coming Soon)",
-      preview: "AI chatbot will be enabled in a future release.",
-      time: "soon",
+      name: "Collab AI",
+      preview: "Ask me anything",
+      time: "now",
       tone: "av-red",
-      status: "Reserved AI chatbot slot",
+      status: "Online",
       unreadCount: 0,
     } :
     directConversations.find((conversation) => conversation.id === selectedConversationId) ?? null;
 
   useEffect(() => {
-    if (!user || !selectedConversationId || selectedConversationId === AI_PLACEHOLDER_ID) {
+    if (!user || !selectedConversationId || selectedConversationId === AI_CONVERSATION_ID) {
       stopListeningMessages();
       return;
     }
@@ -347,8 +357,8 @@ export default function Messages() {
   }, [listenMessages, markConversationRead, selectedConversationId, stopListeningMessages, user]);
 
   const threadMessages = useMemo<ThreadMessageView[]>(() => {
-    if (selectedConversationId === AI_PLACEHOLDER_ID) {
-      return AI_THREAD_MESSAGES.map((message) => ({
+    if (selectedConversationId === AI_CONVERSATION_ID) {
+      return aiMessages.map((message) => ({
         id: message.id,
         sender: message.sender === "me" ? "me" : "other",
         text: message.text,
@@ -363,21 +373,46 @@ export default function Messages() {
       text: message.text,
       time: mapMessageTime(message),
     }));
-  }, [messages, selectedConversationId, user?.uid]);
+  }, [aiMessages, messages, selectedConversationId, user?.uid]);
+
+  const handleSendAiMessage = useCallback(async (text: string) => {
+    const userMsg: AiMessage = { id: nextAiMessageId(), sender: "me", text, time: "just now" };
+    setAiMessages((prev) => [...prev, userMsg]);
+    setAiSending(true);
+    setAiError(null);
+
+    const history: AiChatHistory[] = [...aiHistoryRef.current, { role: "user", content: text }];
+
+    try {
+      const answer = await sendAiMessage(text, aiHistoryRef.current);
+      aiHistoryRef.current = [...history, { role: "assistant", content: answer }];
+      const aiMsg: AiMessage = { id: nextAiMessageId(), sender: "ai", text: answer, time: "just now" };
+      setAiMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Failed to get AI response.");
+      aiHistoryRef.current = history;
+    } finally {
+      setAiSending(false);
+    }
+  }, []);
 
   const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!selectedConversationId || selectedConversationId === AI_PLACEHOLDER_ID) return;
-
     const text = composeValue.trim();
-    if (!text) return;
+    if (!text || !selectedConversationId) return;
+
+    if (selectedConversationId === AI_CONVERSATION_ID) {
+      setComposeValue("");
+      await handleSendAiMessage(text);
+      return;
+    }
 
     try {
       await sendMessage(selectedConversationId, text);
       setComposeValue("");
       await markConversationRead(selectedConversationId);
     } catch {
-      // Error state is handled in messaging store.
+      // handled by store
     }
   };
 
@@ -394,7 +429,7 @@ export default function Messages() {
       {deepLinkError && <div className="auth-error">{deepLinkError}</div>}
       {authLoading && <div className="chat-thread-empty">Loading account...</div>}
       {!user && !authLoading && (
-        <div className="auth-notice">Sign in to send and receive direct messages. AI placeholder is available below.</div>
+        <div className="auth-notice">Sign in to send and receive direct messages. Collab AI is available below.</div>
       )}
 
       {isMobile ? (
@@ -413,12 +448,12 @@ export default function Messages() {
               conversation={selectedConversation}
               mobile
               messages={threadMessages}
-              loading={selectedConversationId === AI_PLACEHOLDER_ID ? false : messagesLoading}
-              error={selectedConversationId === AI_PLACEHOLDER_ID ? null : messagesError}
+              loading={selectedConversationId === AI_CONVERSATION_ID ? false : messagesLoading}
+              error={selectedConversationId === AI_CONVERSATION_ID ? aiError : messagesError}
               draft={composeValue}
               onDraftChange={setComposeValue}
               onSubmit={handleSendMessage}
-              sending={sending}
+              sending={selectedConversationId === AI_CONVERSATION_ID ? aiSending : sending}
             />
           ) : (
             <div className="chat-thread-empty">Conversation not found.</div>
@@ -439,12 +474,12 @@ export default function Messages() {
               conversation={selectedConversation}
               mobile={false}
               messages={threadMessages}
-              loading={selectedConversationId === AI_PLACEHOLDER_ID ? false : messagesLoading}
-              error={selectedConversationId === AI_PLACEHOLDER_ID ? null : messagesError}
+              loading={selectedConversationId === AI_CONVERSATION_ID ? false : messagesLoading}
+              error={selectedConversationId === AI_CONVERSATION_ID ? aiError : messagesError}
               draft={composeValue}
               onDraftChange={setComposeValue}
               onSubmit={handleSendMessage}
-              sending={sending}
+              sending={selectedConversationId === AI_CONVERSATION_ID ? aiSending : sending}
             />
           ) : (
             <section className="chat-main">

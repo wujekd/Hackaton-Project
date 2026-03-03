@@ -8,7 +8,7 @@ import {
   type User,
   type Unsubscribe,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import type { UserProfile } from "../types/auth";
 
@@ -69,5 +69,9 @@ export const AuthService = {
   getUserProfile: async (uid: string): Promise<UserProfile | null> => {
     const snap = await getDoc(doc(db, "users", uid));
     return snap.exists() ? (snap.data() as UserProfile) : null;
+  },
+
+  updateInterests: async (uid: string, interests: string[]): Promise<void> => {
+    await updateDoc(doc(db, "users", uid), { interests });
   },
 };

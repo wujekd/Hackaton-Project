@@ -12,9 +12,10 @@ interface AuthState {
   signUp: (email: string, password: string, username?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  updateProfileInterests: (interests: string[]) => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
   loading: true,
@@ -45,5 +46,24 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signOut: async () => {
     await AuthService.signOut();
+  },
+
+  updateProfileInterests: async (interests) => {
+    const { user, profile } = get();
+    if (!user || !profile) {
+      throw new Error("You must be signed in to update interests.");
+    }
+
+    const previous = profile.interests ?? [];
+    set({ profile: { ...profile, interests } });
+
+    try {
+      await AuthService.updateInterests(user.uid, interests);
+    } catch (error) {
+      set((current) => ({
+        profile: current.profile ? { ...current.profile, interests: previous } : current.profile,
+      }));
+      throw error;
+    }
   },
 }));

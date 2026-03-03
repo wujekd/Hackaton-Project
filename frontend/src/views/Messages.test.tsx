@@ -171,11 +171,11 @@ describe("Messages", () => {
     });
   });
 
-  it("keeps AI chatbot as a disabled placeholder thread", () => {
-    renderMessages("/messages/ai-placeholder", 1280);
+  it("shows the AI chatbot with a working input", () => {
+    renderMessages("/messages/ai-assistant", 1280);
 
-    expect(screen.getByText("Reserved AI chatbot slot")).toBeInTheDocument();
-    expect(screen.getAllByText("AI chatbot will be enabled in a future release.").length).toBeGreaterThan(0);
-    expect(screen.queryByPlaceholderText("Write a message...")).not.toBeInTheDocument();
+    expect(screen.getByText("Online")).toBeInTheDocument();
+    expect(screen.getByText(/Ask me anything about collaborations/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Ask Collab AI...")).toBeInTheDocument();
   });
 });

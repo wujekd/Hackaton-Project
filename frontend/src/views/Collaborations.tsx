@@ -19,6 +19,11 @@ function initials(name: string): string {
   return `${bits[0][0]}${bits[1][0]}`.toUpperCase();
 }
 
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return !!target.closest("a, button, input, textarea, select, label");
+}
+
 export default function Collaborations() {
   const navigate = useNavigate();
   const [collabs, setCollabs] = useState<Collaboration[]>([]);
@@ -103,7 +108,24 @@ export default function Collaborations() {
           )}
 
           {visible.map((collab) => (
-            <article className="collab-card" key={collab.id}>
+            <article
+              className="collab-card clickable"
+              key={collab.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open collaboration ${collab.title}`}
+              onClick={(event) => {
+                if (isInteractiveTarget(event.target)) return;
+                navigate(`/collaborations/${collab.id}`);
+              }}
+              onKeyDown={(event) => {
+                if (isInteractiveTarget(event.target)) return;
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  navigate(`/collaborations/${collab.id}`);
+                }
+              }}
+            >
               <div className="collab-header">
                 <div className="avatar av-red">{initials(collab.authorName)}</div>
                 <div className="collab-author">

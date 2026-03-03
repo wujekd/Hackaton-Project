@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { EventService } from "../services/event.service";
+import { useAuthStore } from "../stores/auth.store";
 import type { EventItem } from "../types/event";
 import { formatDateShort, formatDateTime } from "../utils/date";
 
@@ -16,9 +17,12 @@ function eventType(event: EventItem): string {
 
 export default function EventDetail() {
   const { eventId } = useParams();
+  const { user } = useAuthStore();
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [signedUp, setSignedUp] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
 
   useEffect(() => {
     if (!eventId) {
@@ -38,6 +42,29 @@ export default function EventDetail() {
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [eventId]);
+
+  useEffect(() => {
+    if (!user || !eventId) return;
+    EventService.isSignedUp(user.uid, eventId).then(setSignedUp);
+  }, [user, eventId]);
+
+  const handleSignUpToggle = async () => {
+    if (!user || !event) return;
+    setSignupLoading(true);
+    try {
+      if (signedUp) {
+        await EventService.cancelSignUp(user.uid, event.id);
+        setSignedUp(false);
+      } else {
+        await EventService.signUp(user.uid, event);
+        setSignedUp(true);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Signup failed.");
+    } finally {
+      setSignupLoading(false);
+    }
+  };
 
   const kind = event ? eventType(event) : "Event";
 
@@ -84,7 +111,18 @@ export default function EventDetail() {
             <aside className="detail-card">
               <h2 className="detail-card-title">Actions</h2>
               <div className="detail-actions">
-                <button className="btn-sm accent" type="button">Sign Up</button>
+                {user ? (
+                  <button
+                    className={`btn-sm ${signedUp ? "outline" : "accent"}`}
+                    type="button"
+                    disabled={signupLoading}
+                    onClick={handleSignUpToggle}
+                  >
+                    {signupLoading ? "..." : signedUp ? "Cancel Sign Up" : "Sign Up"}
+                  </button>
+                ) : (
+                  <Link className="btn-sm accent" to="/login">Sign in to sign up</Link>
+                )}
                 <Link className="btn-sm outline" to="/schedule">
                   Open Schedule
                 </Link>

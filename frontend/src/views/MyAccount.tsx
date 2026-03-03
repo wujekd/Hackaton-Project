@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import TagInput from "../components/TagInput";
 import { CollaborationService } from "../services/collaboration.service";
 import { EventService } from "../services/event.service";
 import { useAuthStore } from "../stores/auth.store";
@@ -9,15 +10,6 @@ import { formatDateShort, toDate } from "../utils/date";
 
 type AccountTab = "profile" | "activity";
 
-const mockStudents = [
-  { initials: "TP", name: "Tom Park", role: "Graphic Design - Y3", tags: ["#Branding", "#Illustration"], tone: "av-slate" },
-  { initials: "EL", name: "Eva Lima", role: "Music Tech - Y2", tags: ["#Production", "#Ableton"], tone: "av-muted" },
-  { initials: "NB", name: "Noah Blake", role: "Film - Y1", tags: ["#Directing", "#Editing"], tone: "av-mid" },
-  { initials: "MH", name: "Maya Hassan", role: "Animation - Y3", tags: ["#3D", "#Rigging"], tone: "av-red" },
-];
-
-const interests = ["#GameDev", "#HorrorGames", "#Unity3D", "#LevelDesign", "#IndieGame"];
-
 function maskEmail(email: string): string {
   const at = email.indexOf("@");
   if (at <= 0) return email;
@@ -26,18 +18,32 @@ function maskEmail(email: string): string {
 
 export default function MyAccount() {
   const navigate = useNavigate();
-  const { user, profile } = useAuthStore();
+  const { user, profile, updateProfileInterests } = useAuthStore();
   const [activeTab, setActiveTab] = useState<AccountTab>("profile");
   const [showFullEmail, setShowFullEmail] = useState(false);
   const [collabs, setCollabs] = useState<Collaboration[]>([]);
   const [proposals, setProposals] = useState<EventProposal[]>([]);
   const [loading, setLoading] = useState(!!user);
   const [error, setError] = useState<string | null>(null);
+  const [interestSaving, setInterestSaving] = useState(false);
+  const [interestError, setInterestError] = useState<string | null>(null);
 
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
   const avatarLetter = displayName.trim().slice(0, 2).toUpperCase() || "G";
   const memberSince = formatDateShort(profile?.createdAt);
   const emailLabel = user?.email ? (showFullEmail ? user.email : maskEmail(user.email)) : "Not signed in";
+  const interests = profile?.interests ?? [];
+
+  const handleInterestsChange = (next: string[]) => {
+    if (!user) return;
+    setInterestError(null);
+    setInterestSaving(true);
+    void updateProfileInterests(next)
+      .catch((err: unknown) => {
+        setInterestError(err instanceof Error ? err.message : "Failed to save interests.");
+      })
+      .finally(() => setInterestSaving(false));
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -107,7 +113,6 @@ export default function MyAccount() {
 
       <div className="profile-layout">
         <aside className="profile-left">
-          <div className="profile-cover" />
           <div className="profile-left-main">
             <div className="profile-avatar">{avatarLetter}</div>
             <div className="profile-name">{displayName}</div>
@@ -139,14 +144,20 @@ export default function MyAccount() {
             </div>
           </div>
 
-          <div className="interest-label">Interests (UI)</div>
-          <div className="profile-interests">
-            {interests.map((tag) => (
-              <span className="interest-tag" key={tag}>
-                {tag}
-              </span>
-            ))}
+          <div className="interest-label">Interests</div>
+          <div className="profile-interest-note">
+            Add your own interests so collaborators can find you.
+            {interestSaving ? " Saving..." : ""}
           </div>
+          <div className="profile-interests">
+            <TagInput
+              tags={interests}
+              onChange={handleInterestsChange}
+              disabled={!user || interestSaving}
+              placeholder="#gamedev #unity #leveldesign"
+            />
+          </div>
+          {interestError && <div className="tag-input__error">{interestError}</div>}
           {!user && (
             <button className="btn-primary" type="button" onClick={() => navigate("/login")}>
               Login
@@ -224,36 +235,6 @@ export default function MyAccount() {
                         Edit Copy
                       </Link>
                     </div>
-                  </article>
-                ))}
-              </div>
-
-              <div className="prof-sec-title">
-                Discover Students
-                <div className="search-bar account-search-bar">
-                  <svg className="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  <input placeholder="Name or skill" readOnly />
-                </div>
-              </div>
-              <div className="users-grid">
-                {mockStudents.map((student) => (
-                  <article className="user-card" key={student.name}>
-                    <div className={`avatar ${student.tone}`} style={{ width: 40, height: 40, margin: "0 auto 8px" }}>
-                      {student.initials}
-                    </div>
-                    <div className="user-card-name">{student.name}</div>
-                    <div className="user-card-role">{student.role}</div>
-                    <div className="user-card-tags">
-                      {student.tags.map((tag) => (
-                        <span className="mini-tag" key={`${student.name}-${tag}`}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <button className="btn-follow" type="button">Follow</button>
                   </article>
                 ))}
               </div>

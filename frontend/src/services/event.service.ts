@@ -4,6 +4,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  setDoc,
+  deleteDoc,
   updateDoc,
   serverTimestamp,
   query,
@@ -13,10 +15,12 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
-import type { EventItem, EventProposal } from "../types/event";
+import type { EventItem, EventProposal, EventSignup } from "../types/event";
 
 const EVENTS = "events";
 const PROPOSALS = "eventProposals";
+const USERS = "users";
+const EVENT_SIGNUPS = "eventSignups";
 
 export const EventService = {
   async getApproved(): Promise<EventItem[]> {
@@ -97,5 +101,31 @@ export const EventService = {
 
   async rejectProposal(id: string): Promise<void> {
     await updateDoc(doc(db, PROPOSALS, id), { status: "rejected" });
+  },
+
+  async signUp(userId: string, event: EventItem): Promise<void> {
+    const signupRef = doc(db, USERS, userId, EVENT_SIGNUPS, event.id);
+    await setDoc(signupRef, {
+      eventId: event.id,
+      eventName: event.name,
+      eventDescription: event.description,
+      eventImageUrl: event.imageUrl,
+      eventDate: event.date,
+      signedUpAt: serverTimestamp(),
+    });
+  },
+
+  async cancelSignUp(userId: string, eventId: string): Promise<void> {
+    await deleteDoc(doc(db, USERS, userId, EVENT_SIGNUPS, eventId));
+  },
+
+  async isSignedUp(userId: string, eventId: string): Promise<boolean> {
+    const snap = await getDoc(doc(db, USERS, userId, EVENT_SIGNUPS, eventId));
+    return snap.exists();
+  },
+
+  async getSignups(userId: string): Promise<EventSignup[]> {
+    const snap = await getDocs(collection(db, USERS, userId, EVENT_SIGNUPS));
+    return snap.docs.map((d) => ({ ...d.data() }) as EventSignup);
   },
 };

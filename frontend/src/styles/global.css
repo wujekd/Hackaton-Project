@@ -696,6 +696,15 @@ select {
   border-left-color: var(--red);
 }
 
+.collab-card.clickable {
+  cursor: pointer;
+}
+
+.collab-card.clickable:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
 .collab-header {
   display: flex;
   align-items: flex-start;
@@ -1749,28 +1758,6 @@ select {
   border-right: 1px solid var(--border);
 }
 
-.profile-cover {
-  height: 90px;
-  margin-bottom: -32px;
-  background: linear-gradient(135deg, #1a0007, #3d0011);
-  position: relative;
-  overflow: hidden;
-}
-
-.profile-cover::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 38px,
-      rgba(212, 0, 42, 0.07) 38px,
-      rgba(212, 0, 42, 0.07) 39px
-    );
-}
-
 .profile-avatar {
   width: 68px;
   height: 68px;
@@ -1849,15 +1836,20 @@ select {
   text-transform: uppercase;
 }
 
+.profile-interest-note {
+  color: var(--muted2);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 9px;
+}
+
 .profile-left-main {
   text-align: center;
   margin-top: 36px;
 }
 
 .profile-interests {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  display: block;
   margin-bottom: 14px;
 }
 
@@ -2469,7 +2461,7 @@ select {
   }
 
   .home-hero-cards {
-    grid-template-columns: 1fr;
+    display: none;
   }
 
   .search-bar {

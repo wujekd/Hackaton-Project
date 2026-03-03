@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { EventService } from "../services/event.service";
 import { TimetableService } from "../services/timetable.service";
 import { useAuthStore } from "../stores/auth.store";
-import type { EventItem } from "../types/event";
+import type { EventSignup } from "../types/event";
 import type { TimetableDraft, TimetableItem } from "../types/timetable";
 import { toDate } from "../utils/date";
 
@@ -26,8 +26,8 @@ function TimetableHintIcon() {
   );
 }
 
-function eventType(event: EventItem): string {
-  const text = `${event.name} ${event.description}`.toLowerCase();
+function signupType(signup: EventSignup): string {
+  const text = `${signup.eventName} ${signup.eventDescription}`.toLowerCase();
   if (text.includes("hack")) return "Hackathon";
   if (text.includes("workshop")) return "Workshop";
   if (text.includes("showcase")) return "Showcase";
@@ -91,9 +91,9 @@ function sortTimetableItems(items: TimetableItem[]): TimetableItem[] {
 
 export default function Schedule() {
   const { user } = useAuthStore();
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const [eventError, setEventError] = useState<string | null>(null);
+  const [signups, setSignups] = useState<EventSignup[]>([]);
+  const [signupsLoading, setSignupsLoading] = useState(false);
+  const [signupsError, setSignupsError] = useState<string | null>(null);
   const [timetableItems, setTimetableItems] = useState<TimetableItem[]>([]);
   const [timetableLoading, setTimetableLoading] = useState(false);
   const [timetableError, setTimetableError] = useState<string | null>(null);
@@ -112,11 +112,31 @@ export default function Schedule() {
   });
 
   useEffect(() => {
-    EventService.getApproved()
-      .then(setEvents)
-      .catch((err: Error) => setEventError(err.message))
-      .finally(() => setEventsLoading(false));
-  }, []);
+    if (!user) {
+      setSignups([]);
+      setSignupsError(null);
+      setSignupsLoading(false);
+      return;
+    }
+
+    setSignupsLoading(true);
+    setSignupsError(null);
+    EventService.getSignups(user.uid)
+      .then((loaded) => {
+        setSignups(loaded);
+        const firstDate = loaded.reduce<Date | null>((earliest, s) => {
+          const d = toDate(s.eventDate);
+          if (!d) return earliest;
+          if (!earliest || d < earliest) return d;
+          return earliest;
+        }, null);
+        if (firstDate) {
+          setMonthAnchor(new Date(firstDate.getFullYear(), firstDate.getMonth(), 1));
+        }
+      })
+      .catch((err: Error) => setSignupsError(err.message))
+      .finally(() => setSignupsLoading(false));
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -150,16 +170,16 @@ export default function Schedule() {
       map.set(dateKey(day), []);
     }
 
-    for (const event of events) {
-      const eventDate = toDate(event.date);
+    for (const signup of signups) {
+      const eventDate = toDate(signup.eventDate);
       if (!eventDate) continue;
       const key = dateKey(eventDate);
       const dayEntries = map.get(key);
       if (!dayEntries) continue;
       dayEntries.push({
-        id: `event-${event.id}`,
-        title: event.name,
-        subtitle: eventType(event),
+        id: `event-${signup.eventId}`,
+        title: signup.eventName,
+        subtitle: signupType(signup),
         timeLabel: eventDate.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
         sortMinutes: eventDate.getHours() * 60 + eventDate.getMinutes(),
       });
@@ -170,7 +190,7 @@ export default function Schedule() {
     }
 
     return map;
-  }, [calendarDays, events]);
+  }, [calendarDays, signups]);
   const timetableCountByDay = useMemo(() => {
     const map = new Map<string, number>();
     for (const day of calendarDays) {
@@ -425,8 +445,9 @@ export default function Schedule() {
           </div>
         </div>
 
-        {eventsLoading && <div className="empty-state">Loading events...</div>}
-        {eventError && <div className="auth-error">{eventError}</div>}
+        {signupsLoading && <div className="empty-state">Loading your events...</div>}
+        {signupsError && <div className="auth-error">{signupsError}</div>}
+        {!user && <div className="auth-notice">Sign in to see events you've signed up for.</div>}
 
         <div className="calendar-grid">
           {weekDays.map((weekDay) => (

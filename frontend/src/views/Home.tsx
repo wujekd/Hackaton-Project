@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import PollPlaceholder from "../components/PollPlaceholder";
 import { CollaborationService } from "../services/collaboration.service";
 import { EventService } from "../services/event.service";
@@ -16,7 +16,13 @@ function nameInitials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return !!target.closest("a, button, input, textarea, select, label");
+}
+
 export default function Home() {
+  const navigate = useNavigate();
   const { profile, user } = useAuthStore();
   const [collabs, setCollabs] = useState<Collaboration[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -171,7 +177,24 @@ export default function Home() {
           )}
 
           {collabs.map((c) => (
-            <article className="collab-card" key={c.id}>
+            <article
+              className="collab-card clickable"
+              key={c.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open collaboration ${c.title}`}
+              onClick={(event) => {
+                if (isInteractiveTarget(event.target)) return;
+                navigate(`/collaborations/${c.id}`);
+              }}
+              onKeyDown={(event) => {
+                if (isInteractiveTarget(event.target)) return;
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  navigate(`/collaborations/${c.id}`);
+                }
+              }}
+            >
               <div className="collab-header">
                 <div className="avatar av-red">{nameInitials(c.authorName)}</div>
                 <div className="collab-author">
