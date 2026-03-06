@@ -10,6 +10,10 @@ import {
   query,
   updateDoc,
   where,
+  limit,
+  startAfter,
+  type DocumentData,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import {
   deleteObject,
@@ -21,6 +25,14 @@ import { db, storage } from "./firebase";
 import type { Collaboration, CollaborationFile } from "../types/collaboration";
 
 const COLLECTION = "collaborations";
+
+export type CollaborationCursor = QueryDocumentSnapshot<DocumentData> | null;
+
+export interface CollaborationPage {
+  items: Collaboration[];
+  cursor: CollaborationCursor;
+  hasMore: boolean;
+}
 
 type ThumbnailSelection =
   | { source: "existing"; url: string }
@@ -97,6 +109,23 @@ export const CollaborationService = {
     );
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Collaboration);
+  },
+
+  async listPage(pageSize = 20, cursor: CollaborationCursor = null): Promise<CollaborationPage> {
+    const collabsCollection = collection(db, COLLECTION);
+    const q =
+      cursor ?
+        query(collabsCollection, orderBy("createdAt", "desc"), startAfter(cursor), limit(pageSize)) :
+        query(collabsCollection, orderBy("createdAt", "desc"), limit(pageSize));
+    const snap = await getDocs(q);
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Collaboration);
+    const nextCursor = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : cursor;
+
+    return {
+      items,
+      cursor: nextCursor,
+      hasMore: snap.docs.length === pageSize,
+    };
   },
 
   async create(

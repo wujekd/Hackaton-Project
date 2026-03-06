@@ -5,6 +5,7 @@ import { CollaborationService } from "../services/collaboration.service";
 import { useAuthStore } from "../stores/auth.store";
 import type { Collaboration } from "../types/collaboration";
 import { formatRelativeDate } from "../utils/date";
+import { buildDirectMessageHref } from "../utils/messaging";
 
 const filters = ["All", "Game Dev", "Music", "Film & Media", "Design", "Tech"];
 
@@ -138,7 +139,7 @@ export default function Collaborations() {
                   {user?.uid !== collab.authorId && (
                     <Link
                       className="btn-sm outline"
-                      to={`/messages?userId=${encodeURIComponent(collab.authorId)}`}
+                      to={buildDirectMessageHref(user?.uid, collab.authorId, { username: collab.authorName })}
                     >
                       Message Host
                     </Link>

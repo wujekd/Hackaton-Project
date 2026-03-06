@@ -4,6 +4,7 @@ import { CollaborationService } from "../services/collaboration.service";
 import { useAuthStore } from "../stores/auth.store";
 import type { Collaboration } from "../types/collaboration";
 import { formatDateShort, formatRelativeDate } from "../utils/date";
+import { buildDirectMessageHref } from "../utils/messaging";
 
 function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
@@ -128,7 +129,7 @@ export default function CollaborationDetail() {
                 <div className="detail-actions">
                   <Link
                     className="btn-sm accent collab-message-author-cta"
-                    to={`/messages?userId=${encodeURIComponent(collaboration.authorId)}`}
+                    to={buildDirectMessageHref(user?.uid, collaboration.authorId, { username: collaboration.authorName })}
                   >
                     Message Project Author
                   </Link>

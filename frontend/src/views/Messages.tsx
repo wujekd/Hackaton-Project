@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { sendAiMessage, type AiChatHistory } from "../services/ai-chat.service";
-import { AuthService } from "../services/auth.service";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAuthStore } from "../stores/auth.store";
 import { useMessagingStore } from "../stores/messaging.store";
 import type { ChatMessage, Conversation } from "../types/message";
 import { formatRelativeDate } from "../utils/date";
+import { buildDirectConversationId } from "../utils/messaging";
 
 interface ConversationView {
   id: string;
@@ -24,6 +24,7 @@ interface ThreadMessageView {
   sender: "me" | "other";
   text: string;
   time: string;
+  deliveryState?: "sending" | "sent_flash";
 }
 
 const AI_CONVERSATION_ID = "ai-assistant";
@@ -33,6 +34,14 @@ interface AiMessage {
   sender: "me" | "ai";
   text: string;
   time: string;
+}
+
+interface OptimisticOutgoingMessage {
+  id: string;
+  conversationId: string;
+  text: string;
+  createdAtMs: number;
+  deliveryState: "sending" | "sent_flash";
 }
 
 const AI_WELCOME_MESSAGE: AiMessage = {
@@ -46,6 +55,12 @@ let aiMessageCounter = 0;
 function nextAiMessageId(): string {
   aiMessageCounter += 1;
   return `ai-msg-${aiMessageCounter}`;
+}
+
+let optimisticMessageCounter = 0;
+function nextOptimisticMessageId(): string {
+  optimisticMessageCounter += 1;
+  return `optimistic-msg-${optimisticMessageCounter}`;
 }
 
 const AVATAR_TONES = ["av-red", "av-mid", "av-slate", "av-muted"];
@@ -91,6 +106,59 @@ function mapMessageTime(message: ChatMessage): string {
   return formatRelativeDate(message.createdAt);
 }
 
+function createdAtMs(message: ChatMessage): number {
+  return message.createdAt?.toDate().getTime() ?? Number.NaN;
+}
+
+function matchOptimisticToServerMessages(
+  optimisticMessages: OptimisticOutgoingMessage[],
+  serverMessages: ChatMessage[],
+  currentUid: string | undefined,
+): { matchedPendingIds: Set<string>; matchedServerMessageIds: Set<string> } {
+  const matchedPendingIds = new Set<string>();
+  const matchedServerMessageIds = new Set<string>();
+  if (!currentUid || optimisticMessages.length === 0) {
+    return { matchedPendingIds, matchedServerMessageIds };
+  }
+
+  const ownServerMessages = serverMessages.filter((message) => message.senderId === currentUid);
+  const usedServerIds = new Set<string>();
+  const sortedOptimistic = [...optimisticMessages].sort((a, b) => a.createdAtMs - b.createdAtMs);
+
+  sortedOptimistic.forEach((pending) => {
+    let bestMatchId: string | null = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    ownServerMessages.forEach((serverMessage) => {
+      if (usedServerIds.has(serverMessage.id)) return;
+      if (serverMessage.text !== pending.text) return;
+
+      const serverMs = createdAtMs(serverMessage);
+      if (!Number.isFinite(serverMs)) {
+        if (bestScore > 0) {
+          bestScore = 0;
+          bestMatchId = serverMessage.id;
+        }
+        return;
+      }
+
+      const delta = Math.abs(serverMs - pending.createdAtMs);
+      if (delta > 2 * 60 * 1000) return;
+      if (delta < bestScore) {
+        bestScore = delta;
+        bestMatchId = serverMessage.id;
+      }
+    });
+
+    if (!bestMatchId) return;
+    usedServerIds.add(bestMatchId);
+    matchedPendingIds.add(pending.id);
+    matchedServerMessageIds.add(bestMatchId);
+  });
+
+  return { matchedPendingIds, matchedServerMessageIds };
+}
+
 function ConversationList({
   activeId,
   conversations,
@@ -105,17 +173,6 @@ function ConversationList({
   return (
     <>
       <div className="chat-sidebar-title">Conversations</div>
-      <div className="chat-ai-badge">
-        <div className="shield" style={{ width: 26, height: 30 }}>
-          <div className="shield-text" style={{ fontSize: 11 }}>AI</div>
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600 }}>Collab AI</div>
-          <div style={{ fontSize: 10.5, color: "var(--muted2)" }}>Your AI assistant</div>
-        </div>
-      </div>
-
-      <div className="chat-divider">Direct Messages</div>
       <Link
         className={`chat-item chat-item-link${activeId === AI_CONVERSATION_ID ? " active" : ""}`}
         to={`/messages/${AI_CONVERSATION_ID}`}
@@ -131,6 +188,7 @@ function ConversationList({
           <div className="chat-item-time">now</div>
         </div>
       </Link>
+      <div className="chat-divider">Direct Messages</div>
       {loading && <div className="chat-empty">Loading conversations...</div>}
       {error && <div className="chat-empty">{error}</div>}
       {!loading && !error && conversations.length === 0 && (
@@ -174,7 +232,7 @@ function ConversationThread({
 }: {
   conversation: ConversationView;
   mobile: boolean;
-  messages: Array<{ id: string; sender: "me" | "other"; text: string; time: string }>;
+  messages: Array<{ id: string; sender: "me" | "other"; text: string; time: string; deliveryState?: "sending" | "sent_flash" }>;
   loading: boolean;
   error: string | null;
   draft: string;
@@ -220,7 +278,18 @@ function ConversationThread({
             )}
             <div>
               <div className="msg-bubble">{message.text}</div>
-              <div className="msg-time">{message.time}</div>
+              <div className="msg-time">
+                <span>{message.time}</span>
+                {message.deliveryState && (
+                  <span
+                    className={`msg-status-dot ${
+                      message.deliveryState === "sending" ? "is-sending" : "is-sent"
+                    }`}
+                    aria-label={message.deliveryState === "sending" ? "Sending" : "Sent"}
+                    title={message.deliveryState === "sending" ? "Sending" : "Sent"}
+                  />
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -267,6 +336,10 @@ export default function Messages() {
   const [aiSending, setAiSending] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const aiHistoryRef = useRef<AiChatHistory[]>([]);
+  const [optimisticOutgoingByConversation, setOptimisticOutgoingByConversation] = useState<
+    Record<string, OptimisticOutgoingMessage[]>
+  >({});
+  const optimisticClearTimersRef = useRef<Map<string, number>>(new Map());
 
   const conversations = useMessagingStore((state) => state.conversations);
   const conversationsLoading = useMessagingStore((state) => state.conversationsLoading);
@@ -282,6 +355,19 @@ export default function Messages() {
   const markConversationRead = useMessagingStore((state) => state.markConversationRead);
 
   const targetUserId = searchParams.get("userId")?.trim() ?? "";
+  const targetUsernameHint = searchParams.get("username")?.trim() ?? "";
+  const normalizedRouteConversationId = conversationId?.trim() ?? "";
+  const optimisticDirectConversationId =
+    user && targetUserId && targetUserId !== user.uid ?
+      buildDirectConversationId(user.uid, targetUserId) :
+      "";
+
+  useEffect(() => {
+    return () => {
+      optimisticClearTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+      optimisticClearTimersRef.current.clear();
+    };
+  }, []);
 
   useEffect(() => {
     if (!user || !targetUserId) return;
@@ -293,19 +379,24 @@ export default function Messages() {
 
     let cancelled = false;
     const openDirectConversation = async () => {
-      const targetProfile = await AuthService.getUserProfile(targetUserId).catch(() => null);
-      const targetDisplayName =
-        targetProfile?.nickname?.trim() || targetProfile?.username?.trim() || targetProfile?.email?.trim() || undefined;
-
       const identity = {
         uid: user.uid,
         username: profile?.nickname?.trim() || profile?.username || user.displayName || user.email || "Unknown user",
         email: user.email ?? "",
       };
 
+      if (optimisticDirectConversationId && normalizedRouteConversationId !== optimisticDirectConversationId) {
+        const params = new URLSearchParams();
+        params.set("userId", targetUserId);
+        if (targetUsernameHint) params.set("username", targetUsernameHint);
+        navigate(
+          `/messages/${optimisticDirectConversationId}?${params.toString()}`,
+          { replace: true },
+        );
+      }
+
       return ensureDirectConversation(identity, targetUserId, {
-        username: targetDisplayName,
-        email: targetProfile?.email?.trim() || undefined,
+        username: targetUsernameHint || undefined,
       });
     };
 
@@ -324,23 +415,26 @@ export default function Messages() {
     return () => {
       cancelled = true;
     };
-  }, [ensureDirectConversation, navigate, profile?.nickname, profile?.username, targetUserId, user]);
+  }, [
+    ensureDirectConversation,
+    navigate,
+    normalizedRouteConversationId,
+    optimisticDirectConversationId,
+    profile?.nickname,
+    profile?.username,
+    targetUserId,
+    targetUsernameHint,
+    user,
+  ]);
 
   const directConversations = useMemo(
     () => (user ? conversations.map((conversation) => mapConversation(conversation, user.uid)) : []),
     [conversations, user],
   );
 
-  const normalizedRouteConversationId = conversationId?.trim() ?? "";
-  const routeConversationIsKnown =
-    normalizedRouteConversationId === AI_CONVERSATION_ID ||
-    directConversations.some((conversation) => conversation.id === normalizedRouteConversationId);
-
   const selectedConversationId = (() => {
-    if (normalizedRouteConversationId) {
-      if (routeConversationIsKnown) return normalizedRouteConversationId;
-      return directConversations[0]?.id ?? AI_CONVERSATION_ID;
-    }
+    if (normalizedRouteConversationId) return normalizedRouteConversationId;
+    if (optimisticDirectConversationId) return optimisticDirectConversationId;
     if (isMobile) return null;
     return AI_CONVERSATION_ID;
   })();
@@ -356,7 +450,52 @@ export default function Messages() {
       status: "Online",
       unreadCount: 0,
     } :
-    directConversations.find((conversation) => conversation.id === selectedConversationId) ?? null;
+    directConversations.find((conversation) => conversation.id === selectedConversationId) ?? (
+      selectedConversationId ?
+        {
+          id: selectedConversationId,
+          initials: initials(targetUsernameHint || "DM"),
+          name: targetUsernameHint || "Direct message",
+          preview: "",
+          time: "now",
+          tone: toneForId(targetUserId || selectedConversationId),
+          status: "Opening conversation...",
+          unreadCount: 0,
+        } :
+        null
+    );
+  const activeOptimisticOutgoing = useMemo(
+    () =>
+      selectedConversationId ?
+        (optimisticOutgoingByConversation[selectedConversationId] ?? []) :
+        [],
+    [optimisticOutgoingByConversation, selectedConversationId],
+  );
+
+  const removeOptimisticMessage = useCallback((conversationKey: string, optimisticId: string) => {
+    setOptimisticOutgoingByConversation((prev) => {
+      const current = prev[conversationKey] ?? [];
+      const next = current.filter((message) => message.id !== optimisticId);
+      if (next.length === current.length) return prev;
+      const updated = { ...prev };
+      if (next.length === 0) {
+        delete updated[conversationKey];
+      } else {
+        updated[conversationKey] = next;
+      }
+      return updated;
+    });
+  }, []);
+
+  const markOptimisticMessageSent = useCallback((conversationKey: string, optimisticId: string) => {
+    setOptimisticOutgoingByConversation((prev) => {
+      const current = prev[conversationKey] ?? [];
+      const next = current.map((message) =>
+        message.id === optimisticId ? { ...message, deliveryState: "sent_flash" as const } : message,
+      );
+      return { ...prev, [conversationKey]: next };
+    });
+  }, []);
 
   useEffect(() => {
     if (!user || !selectedConversationId || selectedConversationId === AI_CONVERSATION_ID) {
@@ -376,20 +515,38 @@ export default function Messages() {
     if (selectedConversationId === AI_CONVERSATION_ID) {
       return aiMessages.map((message) => ({
         id: message.id,
-        sender: message.sender === "me" ? "me" : "other",
+        sender: (message.sender === "me" ? "me" : "other") as "me" | "other",
         text: message.text,
         time: message.time,
       }));
     }
 
     const currentUid = user?.uid;
-    return messages.map((message) => ({
+    const { matchedServerMessageIds } = matchOptimisticToServerMessages(
+      activeOptimisticOutgoing,
+      messages,
+      currentUid,
+    );
+
+    const persistedThread = messages
+      .filter((message) => !matchedServerMessageIds.has(message.id))
+      .map((message) => ({
+        id: message.id,
+        sender: (currentUid != null && message.senderId === currentUid ? "me" : "other") as "me" | "other",
+        text: message.text,
+        time: mapMessageTime(message),
+      }));
+
+    const optimisticThread = activeOptimisticOutgoing.map((message) => ({
       id: message.id,
-      sender: currentUid && message.senderId === currentUid ? "me" : "other",
+      sender: "me" as const,
       text: message.text,
-      time: mapMessageTime(message),
+      time: "just now",
+      deliveryState: message.deliveryState,
     }));
-  }, [aiMessages, messages, selectedConversationId, user?.uid]);
+
+    return [...persistedThread, ...optimisticThread];
+  }, [activeOptimisticOutgoing, aiMessages, messages, selectedConversationId, user?.uid]);
 
   const handleSendAiMessage = useCallback(async (text: string) => {
     const userMsg: AiMessage = { id: nextAiMessageId(), sender: "me", text, time: "just now" };
@@ -423,12 +580,37 @@ export default function Messages() {
       return;
     }
 
+    const optimisticId = nextOptimisticMessageId();
+    const optimisticMessage: OptimisticOutgoingMessage = {
+      id: optimisticId,
+      conversationId: selectedConversationId,
+      text,
+      createdAtMs: Date.now(),
+      deliveryState: "sending",
+    };
+
+    setOptimisticOutgoingByConversation((prev) => {
+      const current = prev[selectedConversationId] ?? [];
+      return {
+        ...prev,
+        [selectedConversationId]: [...current, optimisticMessage],
+      };
+    });
+    setComposeValue("");
+
     try {
       await sendMessage(selectedConversationId, text);
-      setComposeValue("");
       await markConversationRead(selectedConversationId);
+      markOptimisticMessageSent(selectedConversationId, optimisticId);
+
+      const timerKey = `${selectedConversationId}:${optimisticId}`;
+      const timerId = window.setTimeout(() => {
+        removeOptimisticMessage(selectedConversationId, optimisticId);
+        optimisticClearTimersRef.current.delete(timerKey);
+      }, 900);
+      optimisticClearTimersRef.current.set(timerKey, timerId);
     } catch {
-      // handled by store
+      removeOptimisticMessage(selectedConversationId, optimisticId);
     }
   };
 
