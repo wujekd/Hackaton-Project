@@ -9,6 +9,15 @@ export interface EventItem {
   createdAt: Timestamp;
 }
 
+export interface EventSignup {
+  eventId: string;
+  eventName: string;
+  eventDescription: string;
+  eventImageUrl: string;
+  eventDate: Timestamp;
+  signedUpAt: Timestamp;
+}
+
 export interface EventProposal {
   id: string;
   name: string;

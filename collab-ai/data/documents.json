@@ -1,0 +1,22 @@
+[
+  {
+    "content": "Spaghetti marinara is a classic Italian pasta dish made with tomato sauce, garlic, basil, and olive oil.",
+    "metadata": { "topic": "cooking", "tag": "italian" }
+  },
+  {
+    "content": "Bruschetta is grilled bread rubbed with garlic and topped with tomato, basil, olive oil, and salt.",
+    "metadata": { "topic": "cooking", "tag": "appetizer" }
+  },
+  {
+    "content": "Neapolitan pizza traditionally uses tomato sauce made from San Marzano tomatoes.",
+    "metadata": { "topic": "cooking", "tag": "pizza" }
+  },
+  {
+    "content": "Minestrone is an Italian vegetable soup that can include tomato broth and pasta.",
+    "metadata": { "topic": "cooking", "tag": "soup" }
+  },
+  {
+    "content": "Tiramisu is an Italian dessert made with mascarpone, coffee-soaked ladyfingers, and cocoa.",
+    "metadata": { "topic": "cooking", "tag": "dessert" }
+  }
+]

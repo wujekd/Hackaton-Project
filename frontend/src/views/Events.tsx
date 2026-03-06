@@ -48,13 +48,9 @@ export default function Events() {
           <span>Events</span>
         </div>
         <div className="topbar-actions">
-          <div className="search-bar">
-            <svg className="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input placeholder="Search events" readOnly />
-          </div>
+          <Link className="btn-sm outline" to="/schedule">
+            Schedule
+          </Link>
           <Link className="btn-sm accent" to="/events/suggest">
             Suggest Event
           </Link>
@@ -104,9 +100,9 @@ export default function Events() {
                     <div className="avatar av-mid">{type[0]}</div>
                     <span className="attendee-count">+{Math.max(5, event.name.length)}</span>
                   </div>
-                  <button className="btn-sm accent" type="button">
-                    Sign Up
-                  </button>
+                  <Link className="btn-sm accent" to={`/events/${event.id}`}>
+                    Open
+                  </Link>
                 </div>
               </div>
             </article>

@@ -13,6 +13,10 @@ export interface Collaboration {
   description: string;
   authorId: string;
   authorName: string;
+  thumbnailUrl?: string | null;
+  mediaDefaultY?: number;
+  mediaMinY?: number;
+  mediaMaxY?: number;
   collaborators: string[];
   tags: string[];
   files: CollaborationFile[];

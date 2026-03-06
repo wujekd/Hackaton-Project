@@ -8,7 +8,7 @@ import {
   type User,
   type Unsubscribe,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import type { UserProfile } from "../types/auth";
 
@@ -26,6 +26,8 @@ async function ensureUserDoc(user: User): Promise<UserProfile> {
     uid: user.uid,
     email: user.email ?? "",
     username: user.displayName ?? undefined,
+    nickname: "",
+    description: "",
     createdAt: serverTimestamp(),
   };
 
@@ -48,6 +50,8 @@ export const AuthService = {
       uid: cred.user.uid,
       email,
       username: username ?? null,
+      nickname: "",
+      description: "",
       createdAt: serverTimestamp(),
     });
     return cred;
@@ -69,5 +73,17 @@ export const AuthService = {
   getUserProfile: async (uid: string): Promise<UserProfile | null> => {
     const snap = await getDoc(doc(db, "users", uid));
     return snap.exists() ? (snap.data() as UserProfile) : null;
+  },
+
+  updateInterests: async (uid: string, interests: string[]): Promise<void> => {
+    await updateDoc(doc(db, "users", uid), { interests });
+  },
+
+  updateDescription: async (uid: string, description: string): Promise<void> => {
+    await updateDoc(doc(db, "users", uid), { description });
+  },
+
+  updateNickname: async (uid: string, nickname: string): Promise<void> => {
+    await updateDoc(doc(db, "users", uid), { nickname });
   },
 };

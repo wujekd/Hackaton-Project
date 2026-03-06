@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import CollabListItem from "../components/CollabListItem";
+import TagInput from "../components/TagInput";
 import { CollaborationService } from "../services/collaboration.service";
 import { EventService } from "../services/event.service";
 import { useAuthStore } from "../stores/auth.store";
@@ -8,15 +10,8 @@ import type { EventProposal } from "../types/event";
 import { formatDateShort, toDate } from "../utils/date";
 
 type AccountTab = "profile" | "activity";
-
-const mockStudents = [
-  { initials: "TP", name: "Tom Park", role: "Graphic Design - Y3", tags: ["#Branding", "#Illustration"], tone: "av-slate" },
-  { initials: "EL", name: "Eva Lima", role: "Music Tech - Y2", tags: ["#Production", "#Ableton"], tone: "av-muted" },
-  { initials: "NB", name: "Noah Blake", role: "Film - Y1", tags: ["#Directing", "#Editing"], tone: "av-mid" },
-  { initials: "MH", name: "Maya Hassan", role: "Animation - Y3", tags: ["#3D", "#Rigging"], tone: "av-red" },
-];
-
-const interests = ["#GameDev", "#HorrorGames", "#Unity3D", "#LevelDesign", "#IndieGame"];
+const MAX_PROFILE_DESCRIPTION = 220;
+const MAX_NICKNAME_LENGTH = 40;
 
 function maskEmail(email: string): string {
   const at = email.indexOf("@");
@@ -26,18 +21,73 @@ function maskEmail(email: string): string {
 
 export default function MyAccount() {
   const navigate = useNavigate();
-  const { user, profile } = useAuthStore();
+  const { user, profile, updateProfileInterests, updateProfileDescription, updateProfileNickname } =
+    useAuthStore();
   const [activeTab, setActiveTab] = useState<AccountTab>("profile");
   const [showFullEmail, setShowFullEmail] = useState(false);
   const [collabs, setCollabs] = useState<Collaboration[]>([]);
   const [proposals, setProposals] = useState<EventProposal[]>([]);
   const [loading, setLoading] = useState(!!user);
   const [error, setError] = useState<string | null>(null);
+  const [interestSaving, setInterestSaving] = useState(false);
+  const [interestError, setInterestError] = useState<string | null>(null);
+  const [nicknameDraft, setNicknameDraft] = useState("");
+  const [nicknameSaving, setNicknameSaving] = useState(false);
+  const [nicknameError, setNicknameError] = useState<string | null>(null);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [descriptionSaving, setDescriptionSaving] = useState(false);
+  const [descriptionError, setDescriptionError] = useState<string | null>(null);
 
-  const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
+  const profileNickname = (profile?.nickname ?? "").trim();
+  const displayName = profileNickname || profile?.username || user?.email?.split("@")[0] || "Guest";
   const avatarLetter = displayName.trim().slice(0, 2).toUpperCase() || "G";
   const memberSince = formatDateShort(profile?.createdAt);
   const emailLabel = user?.email ? (showFullEmail ? user.email : maskEmail(user.email)) : "Not signed in";
+  const interests = profile?.interests ?? [];
+  const profileDescription = (profile?.description ?? "").trim();
+  const isNicknameDirty = nicknameDraft.trim() !== profileNickname;
+  const isDescriptionDirty = descriptionDraft.trim() !== profileDescription;
+
+  useEffect(() => {
+    setNicknameDraft(profile?.nickname ?? "");
+  }, [profile?.nickname]);
+
+  useEffect(() => {
+    setDescriptionDraft(profile?.description ?? "");
+  }, [profile?.description]);
+
+  const handleInterestsChange = (next: string[]) => {
+    if (!user) return;
+    setInterestError(null);
+    setInterestSaving(true);
+    void updateProfileInterests(next)
+      .catch((err: unknown) => {
+        setInterestError(err instanceof Error ? err.message : "Failed to save interests.");
+      })
+      .finally(() => setInterestSaving(false));
+  };
+
+  const handleNicknameSave = () => {
+    if (!user || !isNicknameDirty) return;
+    setNicknameError(null);
+    setNicknameSaving(true);
+    void updateProfileNickname(nicknameDraft.trim())
+      .catch((err: unknown) => {
+        setNicknameError(err instanceof Error ? err.message : "Failed to save nickname.");
+      })
+      .finally(() => setNicknameSaving(false));
+  };
+
+  const handleDescriptionSave = () => {
+    if (!user || !isDescriptionDirty) return;
+    setDescriptionError(null);
+    setDescriptionSaving(true);
+    void updateProfileDescription(descriptionDraft.trim())
+      .catch((err: unknown) => {
+        setDescriptionError(err instanceof Error ? err.message : "Failed to save description.");
+      })
+      .finally(() => setDescriptionSaving(false));
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -98,16 +148,10 @@ export default function MyAccount() {
         <div className="topbar-title">
           <span>My Profile</span>
         </div>
-        <div className="topbar-actions">
-          <button className="btn-sm outline" type="button">
-            Edit Profile (UI)
-          </button>
-        </div>
       </div>
 
       <div className="profile-layout">
         <aside className="profile-left">
-          <div className="profile-cover" />
           <div className="profile-left-main">
             <div className="profile-avatar">{avatarLetter}</div>
             <div className="profile-name">{displayName}</div>
@@ -121,8 +165,10 @@ export default function MyAccount() {
               )}
             </div>
             <div className="profile-bio">
-              Member since {memberSince}. Keep this section as your portfolio snapshot and activity hub.
+              {profileDescription ||
+                "Add a short profile description so collaborators know your focus and interests."}
             </div>
+            <div className="profile-member-since">Member since {memberSince}</div>
             <div className="profile-stats">
               <div className="profile-stat">
                 <div className="profile-stat-val">{collabs.length}</div>
@@ -139,14 +185,73 @@ export default function MyAccount() {
             </div>
           </div>
 
-          <div className="interest-label">Interests (UI)</div>
-          <div className="profile-interests">
-            {interests.map((tag) => (
-              <span className="interest-tag" key={tag}>
-                {tag}
-              </span>
-            ))}
+          <div className="interest-label">Interests</div>
+          <div className="profile-interest-note">
+            Add your own interests so collaborators can find you.
+            {interestSaving ? " Saving..." : ""}
           </div>
+          <div className="profile-interests">
+            <TagInput
+              tags={interests}
+              onChange={handleInterestsChange}
+              disabled={!user || interestSaving}
+              placeholder="#gamedev #unity #leveldesign"
+            />
+          </div>
+          {interestError && <div className="tag-input__error">{interestError}</div>}
+          <div className="profile-nickname-editor form-group">
+            <label htmlFor="profile-nickname-input">Nickname</label>
+            <input
+              id="profile-nickname-input"
+              className="input"
+              type="text"
+              value={nicknameDraft}
+              onChange={(e) => setNicknameDraft(e.target.value)}
+              maxLength={MAX_NICKNAME_LENGTH}
+              placeholder="Set a nickname shown instead of your name."
+              disabled={!user || nicknameSaving}
+            />
+            <div className="profile-description-actions">
+              <span className="profile-description-count">
+                {nicknameDraft.length}/{MAX_NICKNAME_LENGTH}
+              </span>
+              <button
+                className="btn-sm outline"
+                type="button"
+                onClick={handleNicknameSave}
+                disabled={!user || nicknameSaving || !isNicknameDirty}
+              >
+                {nicknameSaving ? "Saving..." : "Save Nickname"}
+              </button>
+            </div>
+          </div>
+          {nicknameError && <div className="tag-input__error">{nicknameError}</div>}
+          <div className="profile-description-editor form-group">
+            <label htmlFor="profile-description-input">Profile Description</label>
+            <textarea
+              id="profile-description-input"
+              className="profile-description-input"
+              value={descriptionDraft}
+              onChange={(e) => setDescriptionDraft(e.target.value)}
+              maxLength={MAX_PROFILE_DESCRIPTION}
+              placeholder="Tell others what you build, what you're looking for, and how to collaborate with you."
+              disabled={!user || descriptionSaving}
+            />
+            <div className="profile-description-actions">
+              <span className="profile-description-count">
+                {descriptionDraft.length}/{MAX_PROFILE_DESCRIPTION}
+              </span>
+              <button
+                className="btn-sm outline"
+                type="button"
+                onClick={handleDescriptionSave}
+                disabled={!user || descriptionSaving || !isDescriptionDirty}
+              >
+                {descriptionSaving ? "Saving..." : "Save Description"}
+              </button>
+            </div>
+          </div>
+          {descriptionError && <div className="tag-input__error">{descriptionError}</div>}
           {!user && (
             <button className="btn-primary" type="button" onClick={() => navigate("/login")}>
               Login
@@ -197,64 +302,24 @@ export default function MyAccount() {
                   <div className="empty-state">No collaborations yet. Create one from the collabs page.</div>
                 )}
                 {collabs.slice(0, 3).map((collab) => (
-                  <article className="collab-card" key={collab.id}>
-                    <div className="collab-header">
-                      <div className="avatar av-red">{avatarLetter}</div>
-                      <div className="collab-author">
-                        <div className="collab-author-name">{displayName} (You)</div>
-                        <div className="collab-meta">{formatDateShort(collab.createdAt)}</div>
-                      </div>
+                  <CollabListItem
+                    key={collab.id}
+                    collab={collab}
+                    meta={formatDateShort(collab.createdAt)}
+                    topRight={
                       <div className="tags">
                         <span className="tag green">Active</span>
                       </div>
-                    </div>
-                    <div className="collab-title">{collab.title}</div>
-                    {collab.description && <div className="collab-desc">{collab.description}</div>}
-                    {collab.tags.length > 0 && (
-                      <div className="tags">
-                        {collab.tags.map((tag) => (
-                          <span className="tag neutral" key={`${collab.id}-${tag}`}>
-                            {tag}
-                          </span>
-                        ))}
+                    }
+                    footerTags={collab.tags}
+                    actions={
+                      <div className="collab-actions">
+                        <Link className="btn-sm outline" to={`/collaborations/${collab.id}/edit`}>
+                          Edit
+                        </Link>
                       </div>
-                    )}
-                    <div className="collab-actions">
-                      <Link className="btn-sm outline" to="/collaborations/new">
-                        Edit Copy
-                      </Link>
-                    </div>
-                  </article>
-                ))}
-              </div>
-
-              <div className="prof-sec-title">
-                Discover Students
-                <div className="search-bar account-search-bar">
-                  <svg className="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  <input placeholder="Name or skill" readOnly />
-                </div>
-              </div>
-              <div className="users-grid">
-                {mockStudents.map((student) => (
-                  <article className="user-card" key={student.name}>
-                    <div className={`avatar ${student.tone}`} style={{ width: 40, height: 40, margin: "0 auto 8px" }}>
-                      {student.initials}
-                    </div>
-                    <div className="user-card-name">{student.name}</div>
-                    <div className="user-card-role">{student.role}</div>
-                    <div className="user-card-tags">
-                      {student.tags.map((tag) => (
-                        <span className="mini-tag" key={`${student.name}-${tag}`}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <button className="btn-follow" type="button">Follow</button>
-                  </article>
+                    }
+                  />
                 ))}
               </div>
             </>

@@ -62,6 +62,22 @@
         { "fieldPath": "authorId", "mode": "ASCENDING" },
         { "fieldPath": "createdAt", "mode": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "eventProposals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "conversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "participantIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "lastMessageAt", "mode": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -1,9 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import type { User } from "firebase/auth";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import Layout from "./Layout";
 import { useAuthStore } from "../stores/auth.store";
+import { useMessagingStore } from "../stores/messaging.store";
 import { mockViewportWidth } from "../test/matchMedia";
 
 interface RenderLayoutOptions {
@@ -11,29 +12,45 @@ interface RenderLayoutOptions {
   width?: number;
   admin?: boolean;
   signedIn?: boolean;
+  unreadTotal?: number;
 }
 
-function renderLayout({ route = "/", width = 375, admin = false, signedIn = true }: RenderLayoutOptions = {}) {
+function renderLayout({
+  route = "/",
+  width = 375,
+  admin = false,
+  signedIn = true,
+  unreadTotal = 0,
+}: RenderLayoutOptions = {}) {
   mockViewportWidth(width);
 
   const user = signedIn
     ? ({ uid: "user-1", email: "alex@example.com" } as unknown as User)
     : null;
 
-  useAuthStore.setState((state) => ({
-    ...state,
-    user,
-    profile: signedIn
-      ? {
-          uid: "user-1",
-          email: "alex@example.com",
-          username: "Alex",
-          admin,
-          createdAt: {} as never,
-        }
-      : null,
-    loading: false,
-  }));
+  act(() => {
+    useAuthStore.setState((state) => ({
+      ...state,
+      user,
+      profile: signedIn
+        ? {
+            uid: "user-1",
+            email: "alex@example.com",
+            username: "Alex",
+            admin,
+            createdAt: {} as never,
+          }
+        : null,
+      loading: false,
+    }));
+
+    useMessagingStore.setState((state) => ({
+      ...state,
+      unreadTotal,
+      listenConversations: vi.fn(),
+      stopAll: vi.fn(),
+    }));
+  });
 
   const router = createMemoryRouter(
     [
@@ -45,7 +62,6 @@ function renderLayout({ route = "/", width = 375, admin = false, signedIn = true
           { path: "collaborations", element: <div>Collabs view</div> },
           { path: "events", element: <div>Events view</div> },
           { path: "messages", element: <div>Messages view</div> },
-          { path: "discover", element: <div>Discover view</div> },
           { path: "account", element: <div>Account view</div> },
           { path: "admin/moderation", element: <div>Moderation view</div> },
           { path: "login", element: <div>Login view</div> },
@@ -60,12 +76,21 @@ function renderLayout({ route = "/", width = 375, admin = false, signedIn = true
 
 describe("Layout mobile shell", () => {
   afterEach(() => {
-    useAuthStore.setState((state) => ({
-      ...state,
-      user: null,
-      profile: null,
-      loading: false,
-    }));
+    act(() => {
+      useAuthStore.setState((state) => ({
+        ...state,
+        user: null,
+        profile: null,
+        loading: false,
+      }));
+
+      useMessagingStore.setState((state) => ({
+        ...state,
+        unreadTotal: 0,
+        listenConversations: vi.fn(),
+        stopAll: vi.fn(),
+      }));
+    });
   });
 
   it("renders bottom tabs on mobile and hides desktop sidebar", () => {
@@ -104,5 +129,12 @@ describe("Layout mobile shell", () => {
 
     expect(screen.getByRole("navigation", { name: "Primary sidebar" })).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Primary mobile navigation" })).not.toBeInTheDocument();
+  });
+
+  it("shows unread badge count from messaging store", () => {
+    renderLayout({ width: 1280, unreadTotal: 7 });
+
+    const sidebar = screen.getByRole("navigation", { name: "Primary sidebar" });
+    expect(sidebar).toHaveTextContent("7");
   });
 });

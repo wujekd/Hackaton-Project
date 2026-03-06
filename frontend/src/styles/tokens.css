@@ -11,9 +11,9 @@
   --red-strong: #b8001f;
   --red-dim: rgba(212, 0, 42, 0.12);
   --red-mid: rgba(212, 0, 42, 0.24);
-  --text: #eaecf2;
-  --muted: #6e7491;
-  --muted2: #9399b8;
+  --text: #f2f4fa;
+  --muted: #8a90b0;
+  --muted2: #b0b5d0;
   --success: #00be82;
 
   --color-bg: var(--bg);
