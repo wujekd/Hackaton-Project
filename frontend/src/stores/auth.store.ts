@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { User } from "firebase/auth";
 import type { UserProfile } from "../types/auth";
 import { AuthService } from "../services/auth.service";
+import type { ThemePreference } from "../types/theme";
 
 interface AuthState {
   user: User | null;
@@ -15,6 +16,7 @@ interface AuthState {
   updateProfileInterests: (interests: string[]) => Promise<void>;
   updateProfileDescription: (description: string) => Promise<void>;
   updateProfileNickname: (nickname: string) => Promise<void>;
+  updateThemePreference: (themePreference: ThemePreference) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -102,6 +104,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       set((current) => ({
         profile: current.profile ? { ...current.profile, nickname: previous } : current.profile,
+      }));
+      throw error;
+    }
+  },
+
+  updateThemePreference: async (themePreference) => {
+    const { user, profile } = get();
+    if (!user || !profile) {
+      throw new Error("You must be signed in to update your theme.");
+    }
+
+    const previous = profile.themePreference ?? "system";
+    set({ profile: { ...profile, themePreference } });
+
+    try {
+      await AuthService.updateThemePreference(user.uid, themePreference);
+    } catch (error) {
+      set((current) => ({
+        profile: current.profile ? { ...current.profile, themePreference: previous } : current.profile,
       }));
       throw error;
     }

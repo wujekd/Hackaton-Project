@@ -65,10 +65,12 @@ Services should use try/catch and map errors to user-friendly messages.
 
 ## Styling
 
-- `styles/tokens.css` — CSS custom properties for colors, spacing, radii, and fonts.
-- `styles/global.css` — reset, base typography, and layout utilities.
-- Use CSS custom properties (`var(--token)`) throughout components.
-- Use CSS Modules for view-scoped styles.
+- Repo-wide theme tokens/base/components live in `/theme`.
+- `styles/tokens.css` bridges the React app onto the shared repo theme contract.
+- `styles/global.css` + smaller companion stylesheets handle app layout and legacy view styling.
+- Theme state is applied via `data-theme` on `<html>` and persisted as `mdx-theme-preference`.
+- Prefer semantic CSS custom properties (`var(--bg)`, `var(--card)`, `var(--text)`, `var(--red)`) instead of hard-coded colors.
+- Contributor guidance lives in `docs/theming.md`.
 
 ## Testing
 

@@ -17,7 +17,9 @@ import Moderation from "./views/Moderation";
 import MyAccount from "./views/MyAccount";
 import NotFound from "./views/NotFound";
 import { useAuthStore } from "./stores/auth.store";
+import { useThemeStore } from "./stores/theme.store";
 import type { RouteHandle } from "./types/route";
+import ThemeShowcase from "./views/ThemeShowcase";
 
 const router = createBrowserRouter([
   {
@@ -101,6 +103,11 @@ const router = createBrowserRouter([
         handle: { title: "Login", breadcrumb: "Login" } satisfies RouteHandle,
       },
       {
+        path: "internal/theme",
+        element: <ThemeShowcase />,
+        handle: { title: "Theme Showcase", breadcrumb: "Theme Showcase" } satisfies RouteHandle,
+      },
+      {
         path: "*",
         element: <NotFound />,
       },
@@ -110,11 +117,22 @@ const router = createBrowserRouter([
 
 export default function App() {
   const init = useAuthStore((s) => s.init);
+  const profileThemePreference = useAuthStore((s) => s.profile?.themePreference);
+  const hydrateTheme = useThemeStore((state) => state.hydrate);
+  const syncProfilePreference = useThemeStore((state) => state.syncProfilePreference);
 
   useEffect(() => {
     const unsub = init();
     return unsub;
   }, [init]);
+
+  useEffect(() => {
+    hydrateTheme();
+  }, [hydrateTheme]);
+
+  useEffect(() => {
+    syncProfilePreference(profileThemePreference);
+  }, [profileThemePreference, syncProfilePreference]);
 
   return <RouterProvider router={router} />;
 }

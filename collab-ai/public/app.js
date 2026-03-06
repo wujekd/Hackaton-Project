@@ -1,4 +1,5 @@
 (() => {
+  const themeButtons = Array.from(document.querySelectorAll("[data-theme-option]"));
   const form = document.getElementById("chat-form");
   const input = document.getElementById("prompt");
   const messagesEl = document.getElementById("messages");
@@ -7,6 +8,23 @@
 
   let isLoading = false;
   const chatHistory = [];
+
+  const syncThemeButtons = () => {
+    const activePreference = window.MDXTheme?.getPreference?.() || "system";
+    themeButtons.forEach((button) => {
+      const isActive = button.dataset.themeOption === activePreference;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+  };
+
+  themeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      window.MDXTheme?.setPreference?.(button.dataset.themeOption || "system");
+    });
+  });
+  window.addEventListener("mdx-theme-change", syncThemeButtons);
+  syncThemeButtons();
 
   const addMessage = (role, content) => {
     const item = document.createElement("li");

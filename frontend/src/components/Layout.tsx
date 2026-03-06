@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAuthStore } from "../stores/auth.store";
 import { useMessagingStore } from "../stores/messaging.store";
+import ThemePreferenceControl from "./ThemePreferenceControl";
 
 function HomeIcon() {
   return (
@@ -316,6 +317,9 @@ export default function Layout() {
             </div>
 
             <div className="mobile-more-links">
+              <div className="mobile-more-theme">
+                <ThemePreferenceControl label="Theme" compact />
+              </div>
               <NavLink
                 className={({ isActive }) => `mobile-more-link${isActive ? " active" : ""}`}
                 to="/schedule"

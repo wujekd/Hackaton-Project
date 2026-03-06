@@ -5,6 +5,7 @@ import TagInput from "../components/TagInput";
 import { CollaborationService } from "../services/collaboration.service";
 import { EventService } from "../services/event.service";
 import { useAuthStore } from "../stores/auth.store";
+import ThemePreferenceControl from "../components/ThemePreferenceControl";
 import type { Collaboration } from "../types/collaboration";
 import type { EventProposal } from "../types/event";
 import { formatDateShort, toDate } from "../utils/date";
@@ -49,10 +50,12 @@ export default function MyAccount() {
   const isDescriptionDirty = descriptionDraft.trim() !== profileDescription;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNicknameDraft(profile?.nickname ?? "");
   }, [profile?.nickname]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDescriptionDraft(profile?.description ?? "");
   }, [profile?.description]);
 
@@ -252,6 +255,13 @@ export default function MyAccount() {
             </div>
           </div>
           {descriptionError && <div className="tag-input__error">{descriptionError}</div>}
+          <div className="profile-theme-settings theme-surface">
+            <div className="interest-label">Appearance</div>
+            <div className="profile-interest-note">
+              Choose whether MDX Collabs follows your device or stays locked to light or dark mode.
+            </div>
+            <ThemePreferenceControl label="Theme preference" />
+          </div>
           {!user && (
             <button className="btn-primary" type="button" onClick={() => navigate("/login")}>
               Login

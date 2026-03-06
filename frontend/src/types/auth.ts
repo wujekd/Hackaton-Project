@@ -1,4 +1,5 @@
 import type { Timestamp } from "firebase/firestore";
+import type { ThemePreference } from "./theme";
 
 export interface UserProfile {
   uid: string;
@@ -7,6 +8,7 @@ export interface UserProfile {
   nickname?: string;
   interests?: string[];
   description?: string;
+  themePreference?: ThemePreference;
   admin?: boolean;
   createdAt: Timestamp;
 }

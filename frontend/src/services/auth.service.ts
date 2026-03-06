@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import type { UserProfile } from "../types/auth";
+import type { ThemePreference } from "../types/theme";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -28,6 +29,7 @@ async function ensureUserDoc(user: User): Promise<UserProfile> {
     username: user.displayName ?? undefined,
     nickname: "",
     description: "",
+    themePreference: "system",
     createdAt: serverTimestamp(),
   };
 
@@ -46,14 +48,15 @@ export const AuthService = {
   signUp: async (email: string, password: string, username?: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const ref = doc(db, "users", cred.user.uid);
-    await setDoc(ref, {
-      uid: cred.user.uid,
-      email,
-      username: username ?? null,
-      nickname: "",
-      description: "",
-      createdAt: serverTimestamp(),
-    });
+      await setDoc(ref, {
+        uid: cred.user.uid,
+        email,
+        username: username ?? null,
+        nickname: "",
+        description: "",
+        themePreference: "system",
+        createdAt: serverTimestamp(),
+      });
     return cred;
   },
 
@@ -85,5 +88,9 @@ export const AuthService = {
 
   updateNickname: async (uid: string, nickname: string): Promise<void> => {
     await updateDoc(doc(db, "users", uid), { nickname });
+  },
+
+  updateThemePreference: async (uid: string, themePreference: ThemePreference): Promise<void> => {
+    await updateDoc(doc(db, "users", uid), { themePreference });
   },
 };

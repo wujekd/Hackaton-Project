@@ -4,16 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hybrid Search Chatbot</title>
+  <script src="/theme/theme.js"></script>
+  <link rel="stylesheet" href="/theme/index.css" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <main class="app">
-    <header class="app-header">
-      <h1>Hybrid Search Chatbot</h1>
-      <p>Local webpage -> Supabase Edge Function -> OpenAI response</p>
+    <header class="app-header theme-surface">
+      <div>
+        <p class="app-kicker">Hybrid Search Chatbot</p>
+        <h1>Hybrid Search Chatbot</h1>
+        <p>Local webpage -> Supabase Edge Function -> OpenAI response</p>
+      </div>
+      <div class="theme-toggle theme-toggle--compact chat-theme-toggle">
+        <div class="theme-toggle__group" role="group" aria-label="Chat theme preference">
+          <button type="button" class="theme-toggle__button" data-theme-option="system">System</button>
+          <button type="button" class="theme-toggle__button" data-theme-option="light">Light</button>
+          <button type="button" class="theme-toggle__button" data-theme-option="dark">Dark</button>
+        </div>
+      </div>
     </header>
 
-    <section class="card">
+    <section class="card theme-surface">
       <div id="status" class="status">Set your Supabase values in <code>public/config.js</code>.</div>
       <ul id="messages" class="messages"></ul>
 
@@ -23,7 +35,7 @@
       </form>
     </section>
 
-    <section class="card sources-card">
+    <section class="card sources-card theme-surface">
       <h2>Retrieved Context</h2>
       <ul id="sources" class="sources"></ul>
     </section>

@@ -5,6 +5,7 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import Layout from "./Layout";
 import { useAuthStore } from "../stores/auth.store";
 import { useMessagingStore } from "../stores/messaging.store";
+import { useThemeStore } from "../stores/theme.store";
 import { mockViewportWidth } from "../test/matchMedia";
 
 interface RenderLayoutOptions {
@@ -50,6 +51,12 @@ function renderLayout({
       listenConversations: vi.fn(),
       stopAll: vi.fn(),
     }));
+
+    useThemeStore.setState({
+      hydrated: true,
+      preference: "system",
+      resolvedTheme: "light",
+    });
   });
 
   const router = createMemoryRouter(
@@ -90,6 +97,12 @@ describe("Layout mobile shell", () => {
         listenConversations: vi.fn(),
         stopAll: vi.fn(),
       }));
+
+      useThemeStore.setState({
+        hydrated: false,
+        preference: "system",
+        resolvedTheme: "light",
+      });
     });
   });
 
@@ -136,5 +149,15 @@ describe("Layout mobile shell", () => {
 
     const sidebar = screen.getByRole("navigation", { name: "Primary sidebar" });
     expect(sidebar).toHaveTextContent("7");
+  });
+
+  it("lets users switch theme from the mobile more sheet", () => {
+    renderLayout({ width: 390 });
+
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(window.localStorage.getItem("mdx-theme-preference")).toBe("dark");
   });
 });

@@ -5,567 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDX Student Dashboard</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap"
-        rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #0c0d10;
-            --bg2: #111318;
-            --bg3: #181b21;
-            --panel-bg: #1c1f27;
-            --panel-border: rgba(255, 255, 255, 0.07);
-            --panel-border2: rgba(255, 255, 255, 0.12);
-            --text-primary: #eaecf2;
-            --text-secondary: #9399b8;
-            --text-muted: #6e7491;
-            --accent: #d4002a;
-            --accent-hover: #b8001f;
-            --accent-dim: rgba(212, 0, 42, 0.12);
-            --accent-mid: rgba(212, 0, 42, 0.22);
-            --nav-height: 70px;
-        }
-
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* ── Keyframes ── */
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(28px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes logoPulse {
-            0%, 100% { text-shadow: 0 0 8px rgba(212, 0, 42, 0.5), 0 0 24px rgba(212, 0, 42, 0.2); }
-            50%       { text-shadow: 0 0 16px rgba(212, 0, 42, 0.9), 0 0 48px rgba(212, 0, 42, 0.4); }
-        }
-
-        @keyframes navShimmer {
-            0%   { background-position: -200% center; }
-            100% { background-position: 200% center; }
-        }
-
-@keyframes qrFloat {
-            0%, 100% { transform: translateY(0px) scale(1);    box-shadow: 0 4px 20px rgba(255,255,255,0.15); }
-            50%       { transform: translateY(-6px) scale(1.02); box-shadow: 0 12px 36px rgba(255,255,255,0.28); }
-        }
-
-        @keyframes avatarSpin {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
-        }
-
-        @keyframes barShimmer {
-            0%   { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        @keyframes scanLine {
-            0%   { top: 0%; opacity: 1; }
-            100% { top: 100%; opacity: 0.3; }
-        }
-
-        @keyframes borderGlow {
-            0%, 100% { border-color: rgba(212, 0, 42, 0.3); box-shadow: 0 0 8px rgba(212,0,42,0.1); }
-            50%       { border-color: rgba(212, 0, 42, 0.7); box-shadow: 0 0 20px rgba(212,0,42,0.3); }
-        }
-
-        /* ── Body & Canvas ── */
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            overflow: auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            -webkit-font-smoothing: antialiased;
-            position: relative;
-        }
-
-        #particle-canvas {
-            position: fixed;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ── Panel Timer Widget ── */
-        .panel-timer {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .page-dots {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-        }
-
-        .page-dot {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: var(--text-muted);
-            transition: background 0.3s ease, transform 0.3s ease;
-        }
-
-        .page-dot.active {
-            background: var(--accent);
-            transform: scale(1.4);
-            box-shadow: 0 0 6px rgba(212,0,42,0.7);
-        }
-
-        .timer-ring-wrap {
-            position: relative;
-            width: 30px;
-            height: 30px;
-            flex-shrink: 0;
-        }
-
-        .timer-ring-wrap svg {
-            transform: rotate(-90deg);
-            will-change: transform;
-        }
-
-        .timer-track {
-            fill: none;
-            stroke: rgba(255,255,255,0.07);
-            stroke-width: 3;
-        }
-
-        .timer-arc {
-            fill: none;
-            stroke: var(--accent);
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-dasharray: 75.4;
-            stroke-dashoffset: 0;
-            will-change: stroke-dashoffset;
-        }
-
-        .timer-num {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Syne', sans-serif;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        nav {
-            height: var(--nav-height);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 40px;
-            border-bottom: 1px solid var(--panel-border);
-            background: rgba(12, 13, 16, 0.94);
-            backdrop-filter: blur(14px);
-            z-index: 10;
-            position: relative;
-            animation: fadeSlideUp 0.5s ease both;
-        }
-
-        nav::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg,
-                transparent 0%,
-                rgba(212,0,42,0.6) 30%,
-                rgba(212,0,42,0.9) 50%,
-                rgba(212,0,42,0.6) 70%,
-                transparent 100%);
-            background-size: 200% 100%;
-            animation: navShimmer 3s linear infinite;
-        }
-
-        .logo {
-            font-family: 'Syne', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 60px;
-            letter-spacing: -0.02em;
-            animation: logoPulse 3s ease-in-out infinite;
-        }
-
-        .logo span {
-            color: var(--accent);
-        }
-
-        .guest-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--accent);
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Syne', sans-serif;
-            font-weight: 700;
-            color: white;
-            cursor: pointer;
-        }
-
-        /* ── Dashboard ── */
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 32px;
-            padding: 32px 40px 40px;
-            height: calc(100vh - var(--nav-height));
-            position: relative;
-            align-items: stretch;
-            z-index: 1;
-            box-sizing: border-box;
-        }
-
-        /* ── Panels ── */
-        .panel {
-            min-width: 0;
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border2);
-            border-radius: 10px;
-            padding: 28px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(16px);
-            opacity: 0;
-            animation: fadeSlideUp 0.6s ease forwards;
-        }
-
-        #events-panel     { animation-delay: 0.15s; }
-        #collabs-panel    { animation-delay: 0.28s; }
-        #engagement-panel { animation-delay: 0.41s; }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 18px;
-            white-space: nowrap;
-        }
-
-        .panel-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            font-weight: 600;
-        }
-
-        .panel-content {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .items-list {
-            flex: 1;
-            overflow: hidden;
-            padding-right: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            padding-bottom: 0;
-            will-change: opacity, transform;
-            transition: opacity 0.25s ease, transform 0.25s ease;
-        }
-
-        .items-list.fading-out {
-            opacity: 0;
-            transform: translateY(-8px);
-            pointer-events: none;
-        }
-
-        .items-list.fading-in {
-            opacity: 0;
-            transform: translateY(10px);
-            pointer-events: none;
-        }
-
-        .items-list.fading-in.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* ── Item Cards ── */
-        .item-card {
-            background: var(--bg3);
-            padding: 16px;
-            border-radius: 0;
-            border: 1px solid var(--panel-border);
-            border-left: 3px solid transparent;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Only animate on initial page load (not dynamically rendered cards) */
-        .items-list.initial .item-card {
-            opacity: 0;
-            animation: fadeSlideUp 0.5s ease forwards;
-        }
-        .items-list.initial .item-card:nth-child(1) { animation-delay: 0.4s; }
-        .items-list.initial .item-card:nth-child(2) { animation-delay: 0.5s; }
-        .items-list.initial .item-card:nth-child(3) { animation-delay: 0.6s; }
-        .items-list.initial .item-card:nth-child(4) { animation-delay: 0.7s; }
-
-        .item-title {
-            font-family: 'Syne', sans-serif;
-            font-weight: 700;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-
-        .item-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.65;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .item-meta {
-            margin-top: 8px;
-            font-size: 12px;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--bg3); }
-
-        /* ── Poll ── */
-        .poll-section {
-            margin-bottom: 0;
-        }
-
-        .poll-question {
-            font-family: 'Syne', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: var(--text-primary);
-        }
-
-        .poll-options {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .poll-placeholder {
-            background: var(--bg3);
-            border: 1px solid var(--panel-border);
-            padding: 14px 16px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.55;
-        }
-
-        .poll-option {
-            background: var(--bg3);
-            border: 1px solid var(--panel-border);
-            padding: 12px 16px;
-            cursor: default;
-            pointer-events: none;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .poll-option.voted {
-            pointer-events: none;
-        }
-
-        .poll-option-bar {
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 0%;
-            background: linear-gradient(90deg, rgba(212,0,42,0.18) 0%, rgba(212,0,42,0.28) 100%);
-            background-size: 200% 100%;
-            z-index: 0;
-            transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        /* shimmer sweep after bar fills */
-        .poll-option-bar.filled {
-            animation: barShimmer 1.8s ease 0.9s 1;
-            background: linear-gradient(
-                90deg,
-                rgba(212,0,42,0.18) 0%,
-                rgba(212,0,42,0.28) 40%,
-                rgba(255,80,80,0.45) 50%,
-                rgba(212,0,42,0.28) 60%,
-                rgba(212,0,42,0.18) 100%
-            );
-            background-size: 200% 100%;
-        }
-
-        .poll-option-content {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .poll-option-text {
-            font-size: 14px;
-            color: var(--text-primary);
-        }
-
-        .poll-option-percent {
-            font-family: 'Syne', sans-serif;
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--accent);
-        }
-
-        .poll-votes {
-            margin-top: 12px;
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        /* ── Engagement Panel ── */
-        #engagement-panel .panel-content {
-            overflow: hidden !important;
-            padding-right: 0;
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 28px !important;
-            align-items: start !important;
-        }
-
-        /* ── QR Code ── */
-        .qr-section {
-            border-left: 1px solid var(--panel-border);
-            padding-left: 28px;
-        }
-
-        .qr-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: var(--text-primary);
-        }
-
-        .qr-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 18px;
-            padding-bottom: 8px;
-            width: 100%;
-        }
-
-        .qr-code {
-            width: 80%;
-            min-width: 140px;
-            max-width: 220px;
-            aspect-ratio: 1 / 1;
-            background: white;
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            animation: qrFloat 4s ease-in-out infinite;
-            box-shadow: 0 4px 20px rgba(255,255,255,0.15);
-        }
-
-        /* Scan line effect over QR */
-        .qr-code::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, rgba(212,0,42,0.8), transparent);
-            animation: scanLine 2.5s linear infinite;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        .qr-code svg {
-            width: 100%;
-            height: 100%;
-        }
-
-        .qr-label {
-            font-size: 13px;
-            color: var(--text-secondary);
-            text-align: center;
-        }
-
-        .qr-link {
-            color: var(--accent);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        /* ── Mobile ── */
-        @media (max-width: 900px) {
-            nav { padding: 0 20px; }
-
-            .dashboard {
-                grid-template-columns: 1fr;
-                height: auto;
-                gap: 20px;
-                padding: 20px 16px 28px;
-            }
-
-            .panel { padding: 20px; }
-
-            .poll-option-content { gap: 12px; }
-
-            #engagement-panel .panel-content {
-                grid-template-columns: 1fr !important;
-            }
-
-            .qr-section {
-                border-left: none;
-                border-top: 1px solid var(--panel-border);
-                padding-left: 0;
-                padding-top: 20px;
-            }
-
-            .qr-code {
-                width: min(70%, 280px);
-                min-width: 160px;
-            }
-        }
-    </style>
+    <script src="../theme/theme.js"></script>
+    <link rel="stylesheet" href="../theme/index.css">
+    <link rel="stylesheet" href="./dashboard.css">
 </head>
 
 <body>
@@ -574,8 +16,17 @@
     <canvas id="particle-canvas"></canvas>
 
     <nav>
-        <div class="logo">MDX<span style="color:var(--accent)">.</span></div>
-        <div class="guest-avatar">G</div>
+        <div class="logo">MDX<span style="color:var(--red)">.</span></div>
+        <div class="nav-actions">
+            <div class="theme-toggle theme-toggle--compact dashboard-theme-toggle">
+                <div class="theme-toggle__group" role="group" aria-label="Dashboard theme preference">
+                    <button type="button" class="theme-toggle__button" data-theme-option="system">System</button>
+                    <button type="button" class="theme-toggle__button" data-theme-option="light">Light</button>
+                    <button type="button" class="theme-toggle__button" data-theme-option="dark">Dark</button>
+                </div>
+            </div>
+            <div class="guest-avatar">G</div>
+        </div>
     </nav>
 
     <div class="dashboard" id="dashboard">
@@ -704,87 +155,17 @@
         </div>
 
     </div>
-
-
-        <script type="module">
+    <script type="module">
         const INFO_SCREEN_FEED_URL = "https://europe-west1-mdxnetwork.cloudfunctions.net/infoScreenFeed";
-
-        (function () {
-            const canvas = document.getElementById("particle-canvas");
-            const ctx = canvas.getContext("2d");
-            let W;
-            let H;
-            const particles = [];
-
-            function resize() {
-                W = canvas.width = window.innerWidth;
-                H = canvas.height = window.innerHeight;
-            }
-            window.addEventListener("resize", resize);
-            resize();
-
-            function rand(min, max) {
-                return Math.random() * (max - min) + min;
-            }
-
-            function createParticle() {
-                return {
-                    x: rand(0, W),
-                    y: rand(H * 0.2, H),
-                    r: rand(1, 2.8),
-                    speed: rand(0.3, 1.1),
-                    opacity: rand(0.08, 0.28),
-                    drift: rand(-0.25, 0.25),
-                    color: Math.random() < 0.35 ? "rgba(212,0,42," : "rgba(234,236,242,"
-                };
-            }
-
-            for (let i = 0; i < 55; i += 1) {
-                const p = createParticle();
-                p.y = rand(0, H);
-                particles.push(p);
-            }
-
-            function draw() {
-                ctx.clearRect(0, 0, W, H);
-                for (const p of particles) {
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                    ctx.fillStyle = p.color + p.opacity + ")";
-                    ctx.fill();
-
-                    p.y -= p.speed;
-                    p.x += p.drift;
-                    p.opacity -= 0.0006;
-
-                    if (p.y < -10 || p.opacity <= 0) {
-                        Object.assign(p, createParticle());
-                        p.y = H + 10;
-                    }
-                }
-                requestAnimationFrame(draw);
-            }
-            draw();
-        })();
-
         const DEFAULT_POLL = {
             status: "placeholder",
             title: "Polls are coming soon",
             description: "This section is reserved for live poll results."
         };
-
-<<<<<<< HEAD
-        const DASHBOARD_DOC_CANDIDATES = [
-            ["dashboard", "current"],
-            ["dashboard", "overview"]
-        ];
-        const INFO_FEED_URL = "https://europe-west1-mdxnetwork.cloudfunctions.net/infoScreenFeed";
-
-=======
->>>>>>> 16ff9d64b65aa6ba71f347d309a74121ea76af0e
         const PAGE_SIZE = 4;
         const TICK = 10;
         const CIRC = 2 * Math.PI * 12;
+        const THEME_BUTTONS = Array.from(document.querySelectorAll("[data-theme-option]"));
         const dateFormatter = new Intl.DateTimeFormat("en-GB", {
             day: "2-digit",
             month: "short",
@@ -812,6 +193,100 @@
             document.getElementById("timer-num-events"),
             document.getElementById("timer-num-collabs")
         ];
+
+        function syncThemeButtons() {
+            const activePreference = window.MDXTheme?.getPreference?.() ?? "system";
+            THEME_BUTTONS.forEach((button) => {
+                const isActive = button.dataset.themeOption === activePreference;
+                button.classList.toggle("is-active", isActive);
+                button.setAttribute("aria-pressed", isActive ? "true" : "false");
+            });
+        }
+
+        THEME_BUTTONS.forEach((button) => {
+            button.addEventListener("click", () => {
+                window.MDXTheme?.setPreference?.(button.dataset.themeOption ?? "system");
+            });
+        });
+        window.addEventListener("mdx-theme-change", syncThemeButtons);
+        syncThemeButtons();
+
+        (function initParticles() {
+            const canvas = document.getElementById("particle-canvas");
+            const ctx = canvas.getContext("2d");
+            let W;
+            let H;
+            const particles = [];
+
+            function resize() {
+                W = canvas.width = window.innerWidth;
+                H = canvas.height = window.innerHeight;
+            }
+
+            function rand(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            function getParticlePalette() {
+                const isDark = document.documentElement.dataset.theme === "dark";
+                return {
+                    accent: "rgba(212,0,42,",
+                    neutral: isDark ? "rgba(234,236,242," : "rgba(18,23,34,"
+                };
+            }
+
+            function createParticle() {
+                const palette = getParticlePalette();
+                return {
+                    x: rand(0, W),
+                    y: rand(H * 0.2, H),
+                    r: rand(1, 2.8),
+                    speed: rand(0.3, 1.1),
+                    opacity: rand(0.08, 0.28),
+                    drift: rand(-0.25, 0.25),
+                    color: Math.random() < 0.35 ? palette.accent : palette.neutral
+                };
+            }
+
+            function retintParticles() {
+                const palette = getParticlePalette();
+                particles.forEach((particle) => {
+                    particle.color = Math.random() < 0.35 ? palette.accent : palette.neutral;
+                });
+            }
+
+            window.addEventListener("resize", resize);
+            window.addEventListener("mdx-theme-change", retintParticles);
+            resize();
+
+            for (let i = 0; i < 55; i += 1) {
+                const particle = createParticle();
+                particle.y = rand(0, H);
+                particles.push(particle);
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+                for (const particle of particles) {
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.r, 0, Math.PI * 2);
+                    ctx.fillStyle = particle.color + particle.opacity + ")";
+                    ctx.fill();
+
+                    particle.y -= particle.speed;
+                    particle.x += particle.drift;
+                    particle.opacity -= 0.0006;
+
+                    if (particle.y < -10 || particle.opacity <= 0) {
+                        Object.assign(particle, createParticle());
+                        particle.y = H + 10;
+                    }
+                }
+                requestAnimationFrame(draw);
+            }
+
+            draw();
+        })();
 
         function escapeHtml(value) {
             return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -1045,41 +520,19 @@
                     </div>
                 `;
             }).join("");
+            requestAnimationFrame(() => {
+                optionsEl.querySelectorAll(".poll-option-bar").forEach((bar) => {
+                    bar.classList.add("filled");
+                });
+            });
             votesEl.textContent = `${totalVotes.toLocaleString()} votes cast`;
             qrSection.style.display = "";
         }
 
         async function fetchDashboardData() {
-<<<<<<< HEAD
-            try {
-                const response = await fetch(INFO_FEED_URL, { method: "GET" });
-                if (response.ok) {
-                    const payload = await response.json();
-                    return {
-                        generatedAt: payload?.generatedAt ?? new Date().toISOString(),
-                        events: Array.isArray(payload?.events) ? payload.events : [],
-                        collaborations: Array.isArray(payload?.collaborations) ? payload.collaborations : [],
-                        polls: payload?.polls ?? DEFAULT_POLL
-                    };
-                }
-            } catch (error) {
-                console.warn("Falling back to direct Firestore queries", error);
-            }
-
-            const [eventsSnap, collabsSnap, dashboardDoc] = await Promise.all([
-                getDocs(query(collection(db, "events"), orderBy("date", "asc"), limit(24))),
-                getDocs(query(collection(db, "collaborations"), orderBy("createdAt", "desc"), limit(24))),
-                loadDashboardDoc()
-            ]);
-
-            const fallbackEvents = eventsSnap.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
-            const fallbackCollabs = collabsSnap.docs.map((entry) => ({ id: entry.id, ...entry.data() }));
-
-=======
             const response = await fetch(INFO_SCREEN_FEED_URL);
             if (!response.ok) throw new Error(`Feed request failed: ${response.status}`);
             const data = await response.json();
->>>>>>> 16ff9d64b65aa6ba71f347d309a74121ea76af0e
             return {
                 generatedAt: data.generatedAt ?? new Date().toISOString(),
                 events: Array.isArray(data.events) ? data.events : [],
