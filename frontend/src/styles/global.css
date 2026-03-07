@@ -324,6 +324,16 @@ select {
   white-space: normal;
 }
 
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes panel-slide-up {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .feedback-overlay {
   position: fixed;
   inset: 0;
@@ -333,6 +343,7 @@ select {
   padding: 24px;
   background: color-mix(in srgb, var(--theme-shadow-ink) 42%, transparent);
   backdrop-filter: blur(8px);
+  animation: overlay-fade-in 0.25s ease-out;
 }
 
 .feedback-overlay__panel {
@@ -342,6 +353,7 @@ select {
   gap: 18px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
+  animation: panel-slide-up 0.3s ease-out;
 }
 
 .feedback-overlay__header {
@@ -381,6 +393,7 @@ select {
   padding: 24px;
   background: color-mix(in srgb, var(--theme-shadow-ink) 42%, transparent);
   backdrop-filter: blur(8px);
+  animation: overlay-fade-in 0.25s ease-out;
 }
 
 .confirm-dialog__panel {
@@ -390,6 +403,7 @@ select {
   gap: 18px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
+  animation: panel-slide-up 0.3s ease-out;
 }
 
 .confirm-dialog__copy {
@@ -2983,6 +2997,7 @@ select {
   padding: 20px;
   background: color-mix(in srgb, #09101d 72%, transparent);
   backdrop-filter: blur(8px);
+  animation: overlay-fade-in 0.25s ease-out;
 }
 
 .collab-photo-modal__panel {
@@ -2991,6 +3006,7 @@ select {
   border: 1px solid var(--border);
   background: var(--surface-overlay-strong);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  animation: panel-slide-up 0.3s ease-out;
 }
 
 .collab-photo-modal__panel h2 {
