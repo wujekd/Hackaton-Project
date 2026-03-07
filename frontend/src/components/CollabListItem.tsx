@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import type { Collaboration } from "../types/collaboration";
+import { getCollaborationCoverImageUrl } from "../utils/collaboration";
 
 export type CollabListItemModel = Pick<
   Collaboration,
@@ -50,7 +51,7 @@ export default function CollabListItem({
   const hovering = useRef(false);
   const frameRef = useRef<number | null>(null);
   const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
-  const coverImage = collab.thumbnailUrl || collab.files.find((file) => file.type.startsWith("image/"))?.url;
+  const coverImage = getCollaborationCoverImageUrl(collab);
   const imageLoaded = !!coverImage && loadedImageUrl === coverImage;
   const rawMinY = clamp(asNumber(collab.mediaMinY, 14), 0, 100);
   const rawMaxY = clamp(asNumber(collab.mediaMaxY, 86), 0, 100);

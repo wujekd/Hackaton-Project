@@ -74,6 +74,7 @@ function renderLayout({
           { path: "events", element: <div>Events view</div> },
           { path: "messages", element: <div>Messages view</div> },
           { path: "account", element: <div>Account view</div> },
+          { path: "appearance", element: <div>Appearance view</div> },
           { path: "admin/moderation", element: <div>Moderation view</div> },
           { path: "login", element: <div>Login view</div> },
         ],
@@ -132,6 +133,7 @@ describe("Layout mobile shell", () => {
     fireEvent.click(moreButton);
     expect(dialog).toHaveClass("open");
     expect(screen.queryByText("Moderation")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Appearance" })).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(dialog).not.toHaveClass("open");
@@ -150,6 +152,7 @@ describe("Layout mobile shell", () => {
 
     expect(screen.getByRole("navigation", { name: "Primary sidebar" })).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Primary mobile navigation" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Appearance" })).toBeInTheDocument();
   });
 
   it("shows unread badge count from messaging store", () => {

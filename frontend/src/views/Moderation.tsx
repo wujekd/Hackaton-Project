@@ -11,15 +11,14 @@ import type { Collaboration } from "../types/collaboration";
 import type { EventItem, EventProposal } from "../types/event";
 import type { PollSummary } from "../types/poll";
 import { formatDateShort, formatDateTime } from "../utils/date";
+import { getCollaborationCoverImageUrl } from "../utils/collaboration";
 
 type ModerationTab = "events" | "polls" | "collabs";
 
 const COLLABS_PAGE_SIZE = 20;
 
 function getCollabCoverImage(collab: Collaboration): string | null {
-  if (collab.thumbnailUrl) return collab.thumbnailUrl;
-  const imageFile = collab.files.find((file) => file.type.startsWith("image/"));
-  return imageFile?.url ?? null;
+  return getCollaborationCoverImageUrl(collab);
 }
 
 export default function Moderation() {

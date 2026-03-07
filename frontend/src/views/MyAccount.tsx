@@ -5,13 +5,11 @@ import TagInput from "../components/TagInput";
 import { CollaborationService } from "../services/collaboration.service";
 import { EventService } from "../services/event.service";
 import { useAuthStore } from "../stores/auth.store";
-import ThemeEditor from "../components/ThemeEditor";
-import ThemePreferenceControl from "../components/ThemePreferenceControl";
 import type { Collaboration } from "../types/collaboration";
 import type { EventProposal } from "../types/event";
 import { formatDateShort, toDate } from "../utils/date";
 
-type AccountTab = "profile" | "activity" | "appearance";
+type AccountTab = "profile" | "activity";
 const MAX_PROFILE_DESCRIPTION = 220;
 const MAX_NICKNAME_LENGTH = 40;
 
@@ -281,13 +279,6 @@ export default function MyAccount() {
               >
                 Activity
               </button>
-              <button
-                className={`filter-pill ${activeTab === "appearance" ? "active" : ""}`}
-                type="button"
-                onClick={() => setActiveTab("appearance")}
-              >
-                Appearance
-              </button>
             </div>
           </div>
 
@@ -359,21 +350,6 @@ export default function MyAccount() {
                 </article>
               ))}
             </>
-          )}
-
-          {user && !loading && activeTab === "appearance" && (
-            <section className="account-appearance-section">
-              <div className="theme-editor-stack">
-                <div className="theme-surface profile-theme-settings">
-                  <div className="interest-label">Theme Mode</div>
-                  <div className="profile-interest-note">
-                    Choose one of the built-in themes or switch to a saved custom preset from the same row.
-                  </div>
-                  <ThemePreferenceControl label="Theme preference" />
-                </div>
-                <ThemeEditor />
-              </div>
-            </section>
           )}
         </section>
       </div>

@@ -61,6 +61,17 @@ function UserIcon() {
   );
 }
 
+function PaletteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 3a9 9 0 0 0 0 18h1.5a2.5 2.5 0 0 0 0-5H12a2 2 0 0 1 0-4h2.75A6.25 6.25 0 0 0 12 3Z" />
+      <circle cx="7.5" cy="10.5" r="1" />
+      <circle cx="9.5" cy="6.5" r="1" />
+      <circle cx="14.5" cy="6.5" r="1" />
+    </svg>
+  );
+}
+
 function GavelIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -173,6 +184,7 @@ export default function Layout() {
   const moreActive =
     location.pathname.startsWith("/schedule") ||
     location.pathname.startsWith("/account") ||
+    location.pathname.startsWith("/appearance") ||
     location.pathname.startsWith("/admin");
 
   const handleMobileSignOut = async () => {
@@ -213,6 +225,7 @@ export default function Layout() {
           <div className="nav-label">Account</div>
           <div className="sidebar-nav-scroll">
             <NavItem to="/account" label="My Profile" icon={<UserIcon />} />
+            <NavItem to="/appearance" label="Appearance" icon={<PaletteIcon />} />
             {profile?.admin && (
               <NavItem to="/admin/moderation" label="Moderation" icon={<GavelIcon />} />
             )}
@@ -335,6 +348,14 @@ export default function Layout() {
               >
                 <span className="nav-icon"><UserIcon /></span>
                 My Profile
+              </NavLink>
+              <NavLink
+                className={({ isActive }) => `mobile-more-link${isActive ? " active" : ""}`}
+                to="/appearance"
+                onClick={() => setIsMoreOpen(false)}
+              >
+                <span className="nav-icon"><PaletteIcon /></span>
+                Appearance
               </NavLink>
               {profile?.admin && (
                 <NavLink

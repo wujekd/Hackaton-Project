@@ -5,6 +5,7 @@ import TagInput from "../components/TagInput";
 import { CollaborationService } from "../services/collaboration.service";
 import { useAuthStore } from "../stores/auth.store";
 import type { CollaborationFile } from "../types/collaboration";
+import { isImageMimeType } from "../utils/collaboration";
 
 const roleSuggestions = ["Graphic Designer", "Music Producer", "Developer", "Editor"];
 const DEFAULT_MEDIA_WINDOW = { defaultY: 50, minY: 14, maxY: 86 };
@@ -34,10 +35,6 @@ type EditSnapshot = {
   thumbnailUrl: string | null;
   mediaWindow: MediaWindow;
 };
-
-function isImageType(type: string): boolean {
-  return type.startsWith("image/");
-}
 
 function makePendingFileId(): string {
   return `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -92,11 +89,11 @@ export default function CreateCollaboration() {
   const isUnauthorizedEdit =
     isEditMode && !!user && !!collabAuthorId && collabAuthorId !== user.uid && !isAdmin;
   const existingImageFiles = useMemo(
-    () => existingFiles.filter((file) => isImageType(file.type)),
+    () => existingFiles.filter((file) => isImageMimeType(file.type)),
     [existingFiles],
   );
   const newImageFiles = useMemo(
-    () => pendingFiles.filter((file) => !!file.previewUrl && isImageType(file.file.type)),
+    () => pendingFiles.filter((file) => !!file.previewUrl && isImageMimeType(file.file.type)),
     [pendingFiles],
   );
 
@@ -126,7 +123,7 @@ export default function CreateCollaboration() {
       const target = pendingFiles.find((entry) => entry.id === selectedThumbnail.id);
       if (target?.previewUrl) return target.previewUrl;
     }
-    return previewFiles.find((file) => isImageType(file.type) && !!file.url)?.url ?? null;
+    return previewFiles.find((file) => isImageMimeType(file.type) && !!file.url)?.url ?? null;
   }, [pendingFiles, previewFiles, selectedThumbnail]);
 
   const previewTags = tags.length > 0 ? tags : [category.toLowerCase()];
@@ -211,7 +208,7 @@ export default function CreateCollaboration() {
     if (!incoming) return;
     const allowed = Array.from(incoming).filter(
       (f) =>
-        isImageType(f.type) ||
+        isImageMimeType(f.type) ||
         f.type === "application/zip" ||
         f.type === "application/x-zip-compressed",
     );
@@ -220,7 +217,7 @@ export default function CreateCollaboration() {
     const nextPending = allowed.map((file) => ({
       id: makePendingFileId(),
       file,
-      previewUrl: isImageType(file.type) ? URL.createObjectURL(file) : null,
+      previewUrl: isImageMimeType(file.type) ? URL.createObjectURL(file) : null,
     }));
 
     setPendingFiles((prev) => [...prev, ...nextPending]);
@@ -306,7 +303,7 @@ export default function CreateCollaboration() {
           }),
         );
 
-        const loadedImageFiles = loadedFiles.filter((file) => isImageType(file.type));
+        const loadedImageFiles = loadedFiles.filter((file) => isImageMimeType(file.type));
         const preferredThumbnailUrl =
           collab.thumbnailUrl && loadedImageFiles.some((file) => file.url === collab.thumbnailUrl) ?
             collab.thumbnailUrl :

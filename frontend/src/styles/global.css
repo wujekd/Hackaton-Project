@@ -1331,12 +1331,186 @@ select {
   text-align: center;
 }
 
+.detail-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detail-card-head .detail-card-title {
+  margin: 0;
+}
+
+.detail-card-meta {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+
+.detail-item-copy {
+  margin-top: 6px;
+}
+
+.detail-item-copy a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--border2);
+  overflow-wrap: anywhere;
+}
+
 .collab-message-author-cta {
   width: 100%;
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.detail-media-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.detail-media-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detail-media-open-link {
+  border: 1px solid var(--border2);
+  background: rgba(8, 10, 15, 0.48);
+  color: var(--text);
+  padding: 8px 11px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.detail-media-open-link:hover {
+  border-color: var(--red);
+}
+
+.detail-media-open-link:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
+.detail-media-gallery {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-media-viewer {
+  display: grid;
+  grid-template-columns: minmax(132px, 168px) minmax(0, 920px);
+  justify-content: start;
+  gap: 12px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.detail-media-viewer.single {
+  grid-template-columns: minmax(0, 920px);
+}
+
+.detail-media-strip {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  max-height: min(56vh, 430px);
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.detail-media-thumb {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  padding: 4px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.detail-media-thumb:hover {
+  border-color: var(--border2);
+}
+
+.detail-media-thumb:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
+.detail-media-thumb.active {
+  border-color: var(--red);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--red) 42%, transparent);
+}
+
+.detail-media-thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.detail-media-thumb span {
+  display: block;
+  min-width: 0;
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--muted2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-media-stage {
+  min-height: 320px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top left, rgba(226, 58, 95, 0.12), transparent 34%),
+    linear-gradient(160deg, rgba(13, 16, 23, 0.98), rgba(5, 7, 12, 0.98));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.detail-media-stage-image {
+  display: block;
+  width: auto;
+  max-width: min(100%, 860px);
+  max-height: min(52vh, 460px);
+  object-fit: contain;
+}
+
+.detail-media-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  font-size: 11px;
+  color: var(--muted2);
 }
 
 .detail-file-list {
@@ -1359,9 +1533,12 @@ select {
 }
 
 .detail-file-list a {
+  flex: 1;
+  min-width: 0;
   color: var(--text);
   text-decoration: underline;
   text-decoration-color: var(--border2);
+  overflow-wrap: anywhere;
 }
 
 .detail-file-list span {
@@ -3159,6 +3336,27 @@ select {
 
   .detail-hero-image {
     min-height: 170px;
+  }
+
+  .detail-media-viewer {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-media-strip {
+    display: flex;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-right: 0;
+    padding-bottom: 4px;
+  }
+
+  .detail-media-thumb {
+    flex: 0 0 132px;
+  }
+
+  .detail-media-stage {
+    min-height: 240px;
   }
 }
 

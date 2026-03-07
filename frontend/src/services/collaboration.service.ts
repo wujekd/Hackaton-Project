@@ -23,6 +23,9 @@ import {
 } from "firebase/storage";
 import { db, storage } from "./firebase";
 import type { Collaboration, CollaborationFile } from "../types/collaboration";
+import {
+  isCollaborationImageFile,
+} from "../utils/collaboration";
 
 const COLLECTION = "collaborations";
 
@@ -39,10 +42,6 @@ type ThumbnailSelection =
   | { source: "new"; index: number }
   | null;
 
-function isImageFile(file: CollaborationFile): boolean {
-  return typeof file.type === "string" && file.type.startsWith("image/");
-}
-
 function pickThumbnailUrl(
   retainedFiles: CollaborationFile[],
   uploadedFiles: CollaborationFile[],
@@ -50,15 +49,15 @@ function pickThumbnailUrl(
 ): string | null {
   if (selection?.source === "existing") {
     const selected = retainedFiles.find((file) => file.url === selection.url);
-    if (selected && isImageFile(selected)) return selected.url;
+    if (selected && isCollaborationImageFile(selected)) return selected.url;
   }
 
   if (selection?.source === "new") {
     const selected = uploadedFiles[selection.index];
-    if (selected && isImageFile(selected)) return selected.url;
+    if (selected && isCollaborationImageFile(selected)) return selected.url;
   }
 
-  const fallback = [...retainedFiles, ...uploadedFiles].find(isImageFile);
+  const fallback = [...retainedFiles, ...uploadedFiles].find(isCollaborationImageFile);
   return fallback?.url ?? null;
 }
 

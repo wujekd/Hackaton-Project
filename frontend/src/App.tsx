@@ -15,6 +15,7 @@ import CreateCollaboration from "./views/CreateCollaboration";
 import SuggestEvent from "./views/SuggestEvent";
 import Moderation from "./views/Moderation";
 import MyAccount from "./views/MyAccount";
+import Appearance from "./views/Appearance";
 import NotFound from "./views/NotFound";
 import { useAuthStore } from "./stores/auth.store";
 import { useThemeStore } from "./stores/theme.store";
@@ -96,6 +97,11 @@ const router = createBrowserRouter([
         path: "account",
         element: <MyAccount />,
         handle: { title: "My Account", breadcrumb: "My Account" } satisfies RouteHandle,
+      },
+      {
+        path: "appearance",
+        element: <Appearance />,
+        handle: { title: "Appearance", breadcrumb: "Appearance" } satisfies RouteHandle,
       },
       {
         path: "login",

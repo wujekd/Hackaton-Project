@@ -1,22 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import type { User } from "firebase/auth";
 import { MemoryRouter } from "react-router-dom";
-import MyAccount from "./MyAccount";
+import Appearance from "./Appearance";
 import { useAuthStore } from "../stores/auth.store";
 import { useThemeStore } from "../stores/theme.store";
-
-vi.mock("../services/collaboration.service", () => ({
-  CollaborationService: {
-    getByAuthor: vi.fn().mockResolvedValue([]),
-  },
-}));
-
-vi.mock("../services/event.service", () => ({
-  EventService: {
-    getProposalsByAuthor: vi.fn().mockResolvedValue([]),
-  },
-}));
 
 const CUSTOM_THEME = {
   id: "ocean-lab",
@@ -35,7 +23,7 @@ const CUSTOM_THEME = {
   },
 };
 
-describe("MyAccount", () => {
+describe("Appearance", () => {
   beforeEach(() => {
     window.localStorage.clear();
     document.documentElement.dataset.theme = "light";
@@ -79,36 +67,32 @@ describe("MyAccount", () => {
     });
   });
 
-  it("keeps account navigation focused on profile and activity", async () => {
+  it("updates the theme from the appearance settings control", async () => {
     render(
       <MemoryRouter>
-        <MyAccount />
+        <Appearance />
       </MemoryRouter>,
     );
 
-    await waitFor(() => {
-      expect(screen.queryByText("Loading your data...")).not.toBeInTheDocument();
-    });
+    const themeToggleGroup = await screen.findByRole("group", { name: "Theme preference preference" });
 
-    expect(screen.getByRole("button", { name: "Profile" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Activity" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Appearance" })).not.toBeInTheDocument();
+    fireEvent.click(within(themeToggleGroup).getByRole("button", { name: "Dark" }));
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("dark");
+      expect(window.localStorage.getItem("mdx-theme-preference")).toBe("dark");
+    });
   });
 
-  it("shows account activity in the activity tab", async () => {
+  it("renders saved custom themes next to the built-in theme buttons", async () => {
     render(
       <MemoryRouter>
-        <MyAccount />
+        <Appearance />
       </MemoryRouter>,
     );
 
-    await waitFor(() => {
-      expect(screen.queryByText("Loading your data...")).not.toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Activity" }));
-
-    expect(await screen.findByText("My Activity")).toBeInTheDocument();
-    expect(screen.getByText("No activity yet. Create a collaboration or suggest an event.")).toBeInTheDocument();
+    const themeToggleGroup = await screen.findByRole("group", { name: "Theme preference preference" });
+    expect(within(themeToggleGroup).getByRole("button", { name: "Ocean Lab" })).toBeInTheDocument();
+    expect(await screen.findByLabelText("Theme name")).toBeInTheDocument();
   });
 });
