@@ -293,6 +293,17 @@
   align-items: center;
 }
 
+.theme-editor-delete-button {
+  border-color: color-mix(in srgb, var(--color-danger) 42%, transparent);
+  color: var(--color-danger);
+}
+
+.theme-editor-delete-button:hover {
+  border-color: color-mix(in srgb, var(--color-danger) 56%, transparent);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
 .theme-editor-layout {
   display: grid;
   gap: 1rem;

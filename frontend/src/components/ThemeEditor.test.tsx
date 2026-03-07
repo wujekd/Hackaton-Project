@@ -171,6 +171,52 @@ describe("ThemeEditor", () => {
     expect(screen.getByLabelText("Theme name")).toHaveValue("");
   });
 
+  it("deletes a saved theme and clears the active selection when needed", async () => {
+    const updateCustomThemes = vi.fn().mockResolvedValue(undefined);
+
+    act(() => {
+      useThemeStore.setState({
+        customThemes: [SAVED_THEME],
+        activeCustomThemeId: "ocean-lab",
+      });
+
+      useAuthStore.setState((state) => ({
+        ...state,
+        profile: state.profile
+          ? {
+              ...state.profile,
+              customThemes: [SAVED_THEME],
+              activeCustomThemeId: "ocean-lab",
+            }
+          : state.profile,
+        updateCustomThemes,
+      }));
+    });
+
+    render(<ThemeEditor />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete theme" }));
+
+    await waitFor(() => {
+      expect(updateCustomThemes).toHaveBeenCalledWith([], null);
+    });
+  });
+
+  it("only shows the delete action for saved signed-in themes", () => {
+    render(<ThemeEditor />);
+
+    expect(screen.queryByRole("button", { name: "Delete theme" })).not.toBeInTheDocument();
+
+    act(() => {
+      useThemeStore.setState({
+        customThemes: [SAVED_THEME],
+        activeCustomThemeId: "ocean-lab",
+      });
+    });
+
+    expect(screen.getByRole("button", { name: "Delete theme" })).toBeInTheDocument();
+  });
+
   it("lets guests apply a theme for the current session without saving a preset", () => {
     act(() => {
       useAuthStore.setState((state) => ({

@@ -121,6 +121,7 @@ interface ThemeEditorProps {
 
 export default function ThemeEditor({ compact = false }: ThemeEditorProps) {
   const user = useAuthStore((state) => state.user);
+  const preference = useThemeStore((state) => state.preference);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const customThemes = useThemeStore((state) => state.customThemes);
   const activeCustomThemeId = useThemeStore((state) => state.activeCustomThemeId);
@@ -260,12 +261,6 @@ export default function ThemeEditor({ compact = false }: ThemeEditorProps) {
     setFieldValues({ ...nextPalette });
   };
 
-  const handleCancel = () => {
-    setError(null);
-    setDraft(loadedDraft);
-    setFieldValues({ ...loadedDraft.palette });
-  };
-
   const handleStartNew = () => {
     const nextDraft = createBlankDraft(resolvedTheme);
     setError(null);
@@ -338,6 +333,27 @@ export default function ThemeEditor({ compact = false }: ThemeEditorProps) {
     }
   };
 
+  const handleDelete = async () => {
+    if (saving || !user || !draft.id) return;
+
+    const nextThemes = customThemes.filter((customTheme) => customTheme.id !== draft.id);
+    const nextActiveCustomThemeId = activeCustomThemeId === draft.id ? null : activeCustomThemeId;
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      await updateCustomThemes(nextThemes, nextActiveCustomThemeId);
+      const nextDraft = createBlankDraft(preference === "dark" ? "dark" : resolvedTheme);
+      setDraft(nextDraft);
+      setFieldValues({ ...nextDraft.palette });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete your theme.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <section className={`theme-editor-shell${compact ? " theme-editor-shell--compact" : ""}`}>
       <div className={`theme-editor-header theme-surface${compact ? " theme-editor-header--compact" : ""}`}>
@@ -346,14 +362,21 @@ export default function ThemeEditor({ compact = false }: ThemeEditorProps) {
           <div className="theme-editor-title-row">
             <h2 className="theme-section-title">Create named presets on top of Light or Dark</h2>
             <div className="theme-editor-secondary-actions">
+              {user && draft.id && (
+                <button
+                  className="btn-sm outline theme-editor-delete-button"
+                  type="button"
+                  onClick={() => void handleDelete()}
+                  disabled={saving}
+                >
+                  Delete theme
+                </button>
+              )}
               <button className="btn-sm outline" type="button" onClick={handleStartNew} disabled={saving}>
                 New theme
               </button>
               <button className="btn-sm outline" type="button" onClick={handleResetPalette} disabled={saving}>
                 Reset palette
-              </button>
-              <button className="btn-sm outline" type="button" onClick={handleCancel} disabled={saving || !hasChanges}>
-                Cancel
               </button>
             </div>
           </div>
