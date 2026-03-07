@@ -101,6 +101,15 @@ type SubmitFeedbackPayload = {
   userEmail?: unknown;
 };
 
+type UpdateFeedbackStatusPayload = {
+  feedbackId?: unknown;
+  addressed?: unknown;
+};
+
+type DeleteFeedbackPayload = {
+  feedbackId?: unknown;
+};
+
 type FeedbackDoc = {
   uid?: unknown;
   userName?: unknown;
@@ -110,6 +119,9 @@ type FeedbackDoc = {
   route?: unknown;
   contextLabel?: unknown;
   createdAt?: unknown;
+  addressed?: unknown;
+  addressedAt?: unknown;
+  updatedAt?: unknown;
 };
 
 type CastPollVotePayload = {
@@ -194,6 +206,14 @@ const asOptionalString = (value: unknown, maxLength: number): string => {
   if (!trimmed) return "";
   if (trimmed.length <= maxLength) return trimmed;
   return trimmed.slice(0, maxLength);
+};
+
+const asBoolean = (value: unknown, field: string): boolean => {
+  if (typeof value !== "boolean") {
+    throw new HttpsError("invalid-argument", `${field} must be a boolean.`);
+  }
+
+  return value;
 };
 
 const normalizeEmail = (value: string): string => value.trim().toLowerCase();
@@ -557,6 +577,8 @@ export const listFeedback = onCall({
         route: asOptionalString(data.route, 200),
         contextLabel: asOptionalString(data.contextLabel, 80),
         createdAt: toIso(data.createdAt),
+        addressed: data.addressed === true,
+        addressedAt: toIso(data.addressedAt),
       };
     }),
   };
@@ -588,8 +610,66 @@ export const submitFeedback = onCall({
     message,
     route,
     contextLabel,
+    addressed: false,
+    addressedAt: null,
     createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
+
+  return {status: "ok"};
+});
+
+export const updateFeedbackStatus = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  await assertAdmin(uid);
+
+  const data = request.data as UpdateFeedbackStatusPayload;
+  const feedbackId = asNonEmptyString(data.feedbackId, "feedbackId", 180);
+  const addressed = asBoolean(data.addressed, "addressed");
+
+  const feedbackRef = db.collection("feedback").doc(feedbackId);
+  const feedbackSnap = await feedbackRef.get();
+  if (!feedbackSnap.exists) {
+    throw new HttpsError("not-found", "Feedback not found.");
+  }
+
+  await feedbackRef.update({
+    addressed,
+    addressedAt: addressed ? FieldValue.serverTimestamp() : null,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  return {status: "ok"};
+});
+
+export const deleteFeedback = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  await assertAdmin(uid);
+
+  const data = request.data as DeleteFeedbackPayload;
+  const feedbackId = asNonEmptyString(data.feedbackId, "feedbackId", 180);
+
+  const feedbackRef = db.collection("feedback").doc(feedbackId);
+  const feedbackSnap = await feedbackRef.get();
+  if (!feedbackSnap.exists) {
+    throw new HttpsError("not-found", "Feedback not found.");
+  }
+
+  await feedbackRef.delete();
 
   return {status: "ok"};
 });

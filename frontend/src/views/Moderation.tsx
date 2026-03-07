@@ -17,6 +17,7 @@ import { formatDateShort, formatDateTime } from "../utils/date";
 import { getCollaborationCoverImageUrl } from "../utils/collaboration";
 
 type ModerationTab = "events" | "polls" | "collabs" | "feedback";
+type FeedbackFilterTab = "unaddressed" | "addressed";
 
 const COLLABS_PAGE_SIZE = 20;
 
@@ -45,7 +46,9 @@ export default function Moderation() {
   const [feedbackItems, setFeedbackItems] = useState<FeedbackEntry[]>([]);
   const [feedbackLoaded, setFeedbackLoaded] = useState(false);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackFilterTab, setFeedbackFilterTab] = useState<FeedbackFilterTab>("unaddressed");
   const [pendingEventDelete, setPendingEventDelete] = useState<EventItem | null>(null);
+  const [pendingFeedbackDelete, setPendingFeedbackDelete] = useState<FeedbackEntry | null>(null);
 
   const isAdmin = profile?.admin === true;
 
@@ -260,6 +263,48 @@ export default function Moderation() {
     }
   };
 
+  const handleUpdateFeedbackStatus = async (feedbackId: string, addressed: boolean) => {
+    setActing(`feedback:${feedbackId}:status`);
+    setError(null);
+    try {
+      await FeedbackService.updateStatus(feedbackId, addressed);
+      setFeedbackItems((prev) => prev.map((item) => (
+        item.id === feedbackId
+          ? {
+            ...item,
+            addressed,
+            addressedAt: addressed ? new Date().toISOString() : null,
+          }
+          : item
+      )));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to update feedback.");
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const confirmDeleteFeedback = async () => {
+    if (!pendingFeedbackDelete) return;
+
+    const feedbackId = pendingFeedbackDelete.id;
+    setActing(`feedback:${feedbackId}:delete`);
+    setError(null);
+    try {
+      await FeedbackService.delete(feedbackId);
+      setFeedbackItems((prev) => prev.filter((item) => item.id !== feedbackId));
+      setPendingFeedbackDelete(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to delete feedback.");
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const visibleFeedback = feedbackItems.filter((item) =>
+    feedbackFilterTab === "addressed" ? item.addressed : !item.addressed,
+  );
+
   const showCoreLoading = loading && activeTab !== "collabs";
 
   return (
@@ -272,6 +317,15 @@ export default function Moderation() {
         busy={pendingEventDelete ? acting === `event:${pendingEventDelete.id}` : false}
         onCancel={() => setPendingEventDelete(null)}
         onConfirm={() => void confirmDeleteEvent()}
+      />
+      <ConfirmDialog
+        isOpen={pendingFeedbackDelete !== null}
+        title={pendingFeedbackDelete ? `Delete "${pendingFeedbackDelete.subject}"?` : "Delete feedback?"}
+        message="This will permanently remove the feedback entry from moderation."
+        confirmLabel={pendingFeedbackDelete && acting === `feedback:${pendingFeedbackDelete.id}:delete` ? "Deleting..." : "Delete feedback"}
+        busy={pendingFeedbackDelete ? acting === `feedback:${pendingFeedbackDelete.id}:delete` : false}
+        onCancel={() => setPendingFeedbackDelete(null)}
+        onConfirm={() => void confirmDeleteFeedback()}
       />
       <div className="topbar">
         <div className="topbar-title">
@@ -532,19 +586,41 @@ export default function Moderation() {
 
       {activeTab === "feedback" && (
         <div className="mod-list">
+          <div className="filters" style={{ paddingInline: 0, paddingTop: 0 }}>
+            <button
+              className={`filter-pill ${feedbackFilterTab === "unaddressed" ? "active" : ""}`}
+              type="button"
+              onClick={() => setFeedbackFilterTab("unaddressed")}
+            >
+              Unaddressed
+            </button>
+            <button
+              className={`filter-pill ${feedbackFilterTab === "addressed" ? "active" : ""}`}
+              type="button"
+              onClick={() => setFeedbackFilterTab("addressed")}
+            >
+              Addressed
+            </button>
+          </div>
           <h2 className="event-title">Student Feedback</h2>
           {!feedbackLoaded && feedbackLoading && (
             <div className="empty-state">Loading feedback...</div>
           )}
-          {feedbackLoaded && feedbackItems.length === 0 && (
-            <div className="empty-state">No feedback has been submitted yet.</div>
+          {feedbackLoaded && visibleFeedback.length === 0 && (
+            <div className="empty-state">
+              {feedbackFilterTab === "addressed"
+                ? "No addressed feedback yet."
+                : "No unaddressed feedback right now."}
+            </div>
           )}
-          {feedbackItems.map((item) => (
-            <article className="mod-card" key={item.id}>
-              <div className="mod-card__img b2" />
+          {visibleFeedback.map((item) => (
+            <article className="mod-card mod-card--compact" key={item.id}>
               <div className="mod-card__body">
                 <h3 className="event-title">{item.subject}</h3>
                 <span className="event-date">Submitted {formatDateTime(item.createdAt)}</span>
+                {item.addressedAt && (
+                  <span className="event-date">Addressed {formatDateTime(item.addressedAt)}</span>
+                )}
                 <span className="mod-card__author">
                   {item.userName || item.userEmail || item.uid}
                 </span>
@@ -557,6 +633,28 @@ export default function Moderation() {
                   {item.contextLabel || "General Feedback"} • {item.route || "-"}
                 </span>
                 <p className="collab-desc">{item.message}</p>
+              </div>
+              <div className="mod-card__actions">
+                <button
+                  className="btn-secondary"
+                  type="button"
+                  disabled={acting === `feedback:${item.id}:status`}
+                  onClick={() => void handleUpdateFeedbackStatus(item.id, !item.addressed)}
+                >
+                  {acting === `feedback:${item.id}:status`
+                    ? "Saving..."
+                    : item.addressed
+                      ? "Mark Unaddressed"
+                      : "Mark Addressed"}
+                </button>
+                <button
+                  className="btn-reject"
+                  type="button"
+                  disabled={acting === `feedback:${item.id}:delete`}
+                  onClick={() => setPendingFeedbackDelete(item)}
+                >
+                  Delete Feedback
+                </button>
               </div>
             </article>
           ))}

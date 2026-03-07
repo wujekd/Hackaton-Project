@@ -23,6 +23,15 @@ type SubmitFeedbackResult = {
   status: string;
 };
 
+type UpdateFeedbackStatusPayload = {
+  feedbackId: string;
+  addressed: boolean;
+};
+
+type DeleteFeedbackPayload = {
+  feedbackId: string;
+};
+
 const listFeedbackCallable = httpsCallable<Record<string, never>, ListFeedbackResult>(
   functions,
   "listFeedback",
@@ -31,6 +40,16 @@ const listFeedbackCallable = httpsCallable<Record<string, never>, ListFeedbackRe
 const submitFeedbackCallable = httpsCallable<SubmitFeedbackPayload, SubmitFeedbackResult>(
   functions,
   "submitFeedback",
+);
+
+const updateFeedbackStatusCallable = httpsCallable<UpdateFeedbackStatusPayload, SubmitFeedbackResult>(
+  functions,
+  "updateFeedbackStatus",
+);
+
+const deleteFeedbackCallable = httpsCallable<DeleteFeedbackPayload, SubmitFeedbackResult>(
+  functions,
+  "deleteFeedback",
 );
 
 function sanitizeField(value: string, maxLength: number): string {
@@ -69,5 +88,26 @@ export const FeedbackService = {
   async list(): Promise<FeedbackEntry[]> {
     const result = await listFeedbackCallable({});
     return result.data.feedback ?? [];
+  },
+
+  async updateStatus(feedbackId: string, addressed: boolean): Promise<void> {
+    const normalizedFeedbackId = feedbackId.trim();
+    if (!normalizedFeedbackId) {
+      throw new Error("Feedback id is required.");
+    }
+
+    await updateFeedbackStatusCallable({
+      feedbackId: normalizedFeedbackId,
+      addressed,
+    });
+  },
+
+  async delete(feedbackId: string): Promise<void> {
+    const normalizedFeedbackId = feedbackId.trim();
+    if (!normalizedFeedbackId) {
+      throw new Error("Feedback id is required.");
+    }
+
+    await deleteFeedbackCallable({ feedbackId: normalizedFeedbackId });
   },
 };

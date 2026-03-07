@@ -18,4 +18,6 @@ export interface FeedbackEntry {
   route: string;
   contextLabel: string;
   createdAt: string | null;
+  addressed: boolean;
+  addressedAt: string | null;
 }

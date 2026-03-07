@@ -3199,6 +3199,10 @@ select {
   min-width: 0;
 }
 
+.mod-card--compact {
+  grid-template-columns: 1fr auto;
+}
+
 .mod-card__author {
   color: var(--muted);
   font-size: 11.5px;
