@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
 import { EventService } from "../services/event.service";
 import { TimetableService } from "../services/timetable.service";
 import { useAuthStore } from "../stores/auth.store";
@@ -285,14 +284,6 @@ export default function Schedule() {
       <div className="topbar">
         <div className="topbar-title">
           <span>Schedule</span>
-        </div>
-        <div className="topbar-actions">
-          <Link className="btn-sm outline" to="/events">
-            Events
-          </Link>
-          <Link className="btn-sm accent" to="/events/suggest">
-            Suggest Event
-          </Link>
         </div>
       </div>
 
