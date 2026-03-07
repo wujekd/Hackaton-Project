@@ -370,7 +370,7 @@ export default function Moderation() {
       {showCoreLoading && <div className="form-shell"><div className="empty-state">Loading moderation data...</div></div>}
 
       {!showCoreLoading && activeTab === "events" && (
-        <>
+        <div className="tab-fade-enter" key="events">
           <div className="mod-list">
             <h2 className="event-title">Pending Proposals</h2>
             {proposals.length === 0 && <div className="empty-state">No pending event proposals.</div>}
@@ -440,11 +440,11 @@ export default function Moderation() {
               </article>
             ))}
           </div>
-        </>
+        </div>
       )}
 
       {!showCoreLoading && activeTab === "polls" && (
-        <div className="mod-list">
+        <div className="tab-fade-enter" key="polls"><div className="mod-list">
           <h2 className="event-title">Campus Polls</h2>
           <div className="form-card">
             <div className="form-group">
@@ -526,11 +526,11 @@ export default function Moderation() {
               </div>
             </article>
           ))}
-        </div>
+        </div></div>
       )}
 
       {activeTab === "collabs" && (
-        <div className="mod-list">
+        <div className="tab-fade-enter" key="collabs"><div className="mod-list">
           <h2 className="event-title">All Collabs</h2>
           {!collabsLoaded && collabsLoading && (
             <div className="empty-state">Loading collaborations...</div>
@@ -583,11 +583,11 @@ export default function Moderation() {
               {collabsLoadingMore ? "Loading..." : "Load More"}
             </button>
           )}
-        </div>
+        </div></div>
       )}
 
       {activeTab === "feedback" && (
-        <div className="mod-list">
+        <div className="tab-fade-enter" key="feedback"><div className="mod-list">
           <div className="filters" style={{ paddingInline: 0, paddingTop: 0 }}>
             <button
               className={`filter-pill ${feedbackFilterTab === "unaddressed" ? "active" : ""}`}
@@ -660,7 +660,7 @@ export default function Moderation() {
               </div>
             </article>
           ))}
-        </div>
+        </div></div>
       )}
     </div>
   );

@@ -307,7 +307,9 @@ export default function Layout() {
       )}
 
       <main className={`main-content${isMobile ? " mobile-main-content" : ""}`}>
-        <Outlet />
+        <div className="page-enter" key={location.pathname}>
+          <Outlet />
+        </div>
       </main>
 
       {isMobile && (

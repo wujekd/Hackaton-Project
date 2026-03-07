@@ -292,7 +292,7 @@ export default function MyAccount() {
           {user && error && <div className="auth-error">{error}</div>}
 
           {user && !loading && activeTab === "profile" && (
-            <>
+            <div className="tab-fade-enter" key="profile">
               <div className="account-profile-section">
                 <div className="prof-sec-title">
                   My Collabs
@@ -324,11 +324,11 @@ export default function MyAccount() {
                   />
                 ))}
               </div>
-            </>
+            </div>
           )}
 
           {user && !loading && activeTab === "activity" && (
-            <>
+            <div className="tab-fade-enter" key="activity">
               <div className="prof-sec-title">My Activity</div>
               {activityItems.length === 0 && (
                 <div className="empty-state">
@@ -349,7 +349,7 @@ export default function MyAccount() {
                   {item.message && <p className="collab-desc">{item.message}</p>}
                 </article>
               ))}
-            </>
+            </div>
           )}
         </section>
       </div>
