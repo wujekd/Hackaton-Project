@@ -215,8 +215,49 @@
   align-items: center;
 }
 
+.theme-showcase-actions--compact {
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+}
+
+.theme-showcase-actions--compact > * {
+  flex: 0 1 auto;
+}
+
+.theme-showcase-actions--compact .btn-primary,
+.theme-showcase-actions--compact .btn-sm,
+.theme-chip--compact {
+  min-height: 1.8rem;
+  padding: 0.34rem 0.58rem;
+  font-size: 0.74rem;
+}
+
+.theme-chip--compact {
+  gap: 0.2rem;
+}
+
 .theme-showcase-form {
   max-width: 26rem;
+}
+
+.theme-showcase-form--compact {
+  max-width: none;
+  margin-bottom: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.theme-showcase-form--compact label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.theme-showcase-form--compact input {
+  min-width: 0;
+  padding: 0.48rem 0.58rem;
+  font-size: 0.78rem;
 }
 
 .theme-editor-shell {

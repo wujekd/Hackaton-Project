@@ -32,13 +32,13 @@ export default function ThemePreview({ className = "theme-showcase-grid", compac
 
       <article className={`theme-showcase-card theme-surface${compact ? " theme-showcase-card--compact" : ""}`}>
         <h2 className="theme-showcase-card-title">Interactive States</h2>
-        <div className="theme-showcase-actions">
-          <button className="btn-primary" type="button">Primary action</button>
-          <button className="btn-sm accent" type="button">Accent button</button>
-          <button className="btn-sm outline" type="button">Outline button</button>
-          <span className="theme-chip">Active state</span>
+        <div className={`theme-showcase-actions${compact ? " theme-showcase-actions--compact" : ""}`}>
+          <button className="btn-primary" type="button">{compact ? "Primary btn" : "Primary action"}</button>
+          <button className="btn-sm accent" type="button">{compact ? "Accent btn" : "Accent button"}</button>
+          <button className="btn-sm outline" type="button">{compact ? "Outline btn" : "Outline button"}</button>
+          <span className={`theme-chip${compact ? " theme-chip--compact" : ""}`}>{compact ? "Active" : "Active state"}</span>
         </div>
-        <div className="input-group theme-showcase-form">
+        <div className={`input-group theme-showcase-form${compact ? " theme-showcase-form--compact" : ""}`}>
           <label htmlFor="theme-preview-input">Input</label>
           <input id="theme-preview-input" type="text" placeholder="Check focus treatment" readOnly />
         </div>
