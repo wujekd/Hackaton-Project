@@ -297,19 +297,26 @@ export default function Schedule() {
       </div>
 
       <section className="planner-shell">
-        <div className="sec-head">
-          <span className="bar" />
-          Weekly Plan
+        <div className="planner-header">
+          <div className="sec-head">
+            <span className="bar" />
+            Weekly Plan
+          </div>
+          <div className="planner-header-meta">
+            {!user && (
+              <div className="auth-notice auth-notice-inline">
+                Sign in to save timetable items to your account.
+              </div>
+            )}
+            {selectedDayIndex === null && (
+              <div className="planner-hint planner-hint-inline">
+                Click any day to open the add timetable form.
+              </div>
+            )}
+          </div>
         </div>
         {timetableError && <div className="auth-error">{timetableError}</div>}
-        {!user && (
-          <div className="auth-notice">Sign in to save timetable items to your account.</div>
-        )}
         <div className="planner-grid">
-          {selectedDayIndex === null && (
-            <div className="planner-hint">Click any day to open the add timetable form.</div>
-          )}
-
           {selectedDayIndex !== null && (
             <form className="planner-form" onSubmit={handleTimetableSubmit}>
               <div className="planner-form-head">
@@ -425,29 +432,35 @@ export default function Schedule() {
       <section className="calendar-shell">
         <div className="calendar-toolbar">
           <div className="calendar-toolbar-title">{monthLabel}</div>
-          <div className="calendar-toolbar-actions">
-            <button
-              className="btn-sm outline"
-              type="button"
-              onClick={() => {
-                const now = new Date();
-                setMonthAnchor(new Date(now.getFullYear(), now.getMonth(), 1));
-              }}
-            >
-              Today
-            </button>
-            <button className="btn-sm outline" type="button" onClick={() => shiftMonth(-1)}>
-              Previous
-            </button>
-            <button className="btn-sm outline" type="button" onClick={() => shiftMonth(1)}>
-              Next
-            </button>
+          <div className="calendar-toolbar-meta">
+            {!user && (
+              <div className="auth-notice auth-notice-inline">
+                Sign in to see events you've signed up for.
+              </div>
+            )}
+            <div className="calendar-toolbar-actions">
+              <button
+                className="btn-sm outline"
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  setMonthAnchor(new Date(now.getFullYear(), now.getMonth(), 1));
+                }}
+              >
+                Today
+              </button>
+              <button className="btn-sm outline" type="button" onClick={() => shiftMonth(-1)}>
+                Previous
+              </button>
+              <button className="btn-sm outline" type="button" onClick={() => shiftMonth(1)}>
+                Next
+              </button>
+            </div>
           </div>
         </div>
 
         {signupsLoading && <div className="empty-state">Loading your events...</div>}
         {signupsError && <div className="auth-error">{signupsError}</div>}
-        {!user && <div className="auth-notice">Sign in to see events you've signed up for.</div>}
 
         <div className="calendar-grid">
           {weekDays.map((weekDay) => (

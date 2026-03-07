@@ -65,6 +65,7 @@ describe("theme store", () => {
       resolvedTheme: "light",
       customThemes: [],
       activeCustomThemeId: null,
+      sessionTheme: null,
     });
     mockThemeMatchMedia(false);
   });
@@ -143,6 +144,20 @@ describe("theme store", () => {
     expect(window.localStorage.getItem(ACTIVE_CUSTOM_THEME_STORAGE_KEY)).toBe("night-shift");
     expect(useThemeStore.getState().activeCustomThemeId).toBe("night-shift");
     expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
+  it("applies a guest session theme without writing a saved preset", () => {
+    act(() => {
+      useThemeStore.getState().hydrate();
+      useThemeStore.getState().applySessionTheme(CUSTOM_THEMES[0]);
+    });
+
+    expect(useThemeStore.getState().sessionTheme).toEqual(CUSTOM_THEMES[0]);
+    expect(useThemeStore.getState().activeCustomThemeId).toBeNull();
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(document.documentElement.style.getPropertyValue("--theme-light-canvas-override")).toBe("#112233");
+    expect(window.localStorage.getItem(CUSTOM_THEME_STORAGE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(ACTIVE_CUSTOM_THEME_STORAGE_KEY)).toBeNull();
   });
 
   it("resets to the default guest system theme", () => {

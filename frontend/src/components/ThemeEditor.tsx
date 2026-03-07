@@ -115,27 +115,37 @@ function buildPreviewStyle(draft: ThemeDraft): CSSProperties {
   return previewStyle as CSSProperties;
 }
 
-export default function ThemeEditor() {
+interface ThemeEditorProps {
+  compact?: boolean;
+}
+
+export default function ThemeEditor({ compact = false }: ThemeEditorProps) {
+  const user = useAuthStore((state) => state.user);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const customThemes = useThemeStore((state) => state.customThemes);
   const activeCustomThemeId = useThemeStore((state) => state.activeCustomThemeId);
+  const sessionTheme = useThemeStore((state) => state.sessionTheme);
+  const applySessionTheme = useThemeStore((state) => state.applySessionTheme);
   const updateCustomThemes = useAuthStore((state) => state.updateCustomThemes);
   const activeCustomTheme = useMemo(
     () => getCustomThemeById(customThemes, activeCustomThemeId),
     [customThemes, activeCustomThemeId],
   );
   const loadedDraft = useMemo(
-    () => createDraftFromTheme(activeCustomTheme, resolvedTheme),
-    [activeCustomTheme, resolvedTheme],
+    () => createDraftFromTheme(sessionTheme ?? activeCustomTheme, resolvedTheme),
+    [activeCustomTheme, resolvedTheme, sessionTheme],
   );
   const [draft, setDraft] = useState<ThemeDraft>(loadedDraft);
   const [fieldValues, setFieldValues] = useState<Record<ThemePaletteSlot, string>>({ ...loadedDraft.palette });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionPopupVisible, setSessionPopupVisible] = useState(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const sessionPopupTimerRef = useRef<number | null>(null);
   const persistedThemeRef = useRef({
     activeCustomTheme,
     resolvedTheme,
+    sessionTheme,
   });
 
   const loadedDraftSignature = serializeDraft(loadedDraft);
@@ -149,8 +159,9 @@ export default function ThemeEditor() {
     persistedThemeRef.current = {
       activeCustomTheme,
       resolvedTheme,
+      sessionTheme,
     };
-  }, [activeCustomTheme, resolvedTheme]);
+  }, [activeCustomTheme, resolvedTheme, sessionTheme]);
 
   useEffect(() => {
     setDraft(loadedDraft);
@@ -168,12 +179,26 @@ export default function ThemeEditor() {
 
   useLayoutEffect(() => {
     return () => {
-      const { activeCustomTheme: persistedCustomTheme, resolvedTheme: persistedResolvedTheme } =
+      if (sessionPopupTimerRef.current !== null) {
+        window.clearTimeout(sessionPopupTimerRef.current);
+      }
+      const { activeCustomTheme: persistedCustomTheme, resolvedTheme: persistedResolvedTheme, sessionTheme: persistedSessionTheme } =
         persistedThemeRef.current;
-      applyCustomTheme(persistedCustomTheme);
-      applyResolvedTheme(persistedResolvedTheme);
+      applyCustomTheme(persistedSessionTheme ?? persistedCustomTheme);
+      applyResolvedTheme(persistedSessionTheme?.baseTheme ?? persistedResolvedTheme);
     };
   }, []);
+
+  const showSessionPopup = () => {
+    setSessionPopupVisible(true);
+    if (sessionPopupTimerRef.current !== null) {
+      window.clearTimeout(sessionPopupTimerRef.current);
+    }
+    sessionPopupTimerRef.current = window.setTimeout(() => {
+      setSessionPopupVisible(false);
+      sessionPopupTimerRef.current = null;
+    }, 2400);
+  };
 
   const handlePaletteChange = (slot: ThemePaletteSlot, value: string) => {
     const normalized = normalizeHexColor(value);
@@ -261,6 +286,18 @@ export default function ThemeEditor() {
   const handleSave = async () => {
     if (saving || invalidFieldCount > 0 || !hasChanges) return;
 
+    if (!user) {
+      applySessionTheme({
+        id: "session-theme",
+        name: normalizeThemeName(draft.name) ?? "Session Theme",
+        baseTheme: draft.baseTheme,
+        palette: cloneThemePalette(draft.palette),
+      });
+      setError(null);
+      showSessionPopup();
+      return;
+    }
+
     const normalizedName = normalizeThemeName(draft.name);
     if (!normalizedName) {
       setError("Name this theme before saving it.");
@@ -302,40 +339,50 @@ export default function ThemeEditor() {
   };
 
   return (
-    <section className="theme-editor-shell">
-      <div className="theme-editor-header theme-surface">
+    <section className={`theme-editor-shell${compact ? " theme-editor-shell--compact" : ""}`}>
+      <div className={`theme-editor-header theme-surface${compact ? " theme-editor-header--compact" : ""}`}>
         <div>
           <p className="theme-showcase-kicker">Custom Theme</p>
-          <h2 className="theme-section-title">Create named presets on top of Light or Dark</h2>
+          <div className="theme-editor-title-row">
+            <h2 className="theme-section-title">Create named presets on top of Light or Dark</h2>
+            <div className="theme-editor-secondary-actions">
+              <button className="btn-sm outline" type="button" onClick={handleStartNew} disabled={saving}>
+                New theme
+              </button>
+              <button className="btn-sm outline" type="button" onClick={handleResetPalette} disabled={saving}>
+                Reset palette
+              </button>
+              <button className="btn-sm outline" type="button" onClick={handleCancel} disabled={saving || !hasChanges}>
+                Cancel
+              </button>
+            </div>
+          </div>
           <p className="theme-showcase-copy">
-            The built-in Light and Dark themes stay fixed. Custom themes are saved as named presets and
-            appear next to them in the selector.
+            {user
+              ? "The built-in Light and Dark themes stay fixed. Custom themes are saved as named presets and appear next to them in the selector."
+              : "Use the editor to apply page colors for this session. Sign in when you want to save the design as a named preset."}
           </p>
         </div>
         <div className="theme-editor-actions">
-          <button className="btn-sm outline" type="button" onClick={handleStartNew} disabled={saving}>
-            New theme
-          </button>
-          <button className="btn-sm outline" type="button" onClick={handleResetPalette} disabled={saving}>
-            Reset palette
-          </button>
-          <button className="btn-sm outline" type="button" onClick={handleCancel} disabled={saving || !hasChanges}>
-            Cancel
-          </button>
           <button
             className="btn-primary"
             type="button"
             onClick={() => void handleSave()}
             disabled={saving || invalidFieldCount > 0 || !hasChanges}
           >
-            {saving ? "Saving..." : draft.id ? "Save changes" : "Save theme"}
+            {saving ? "Saving..." : user ? draft.id ? "Save changes" : "Save theme" : "Apply for this session"}
           </button>
         </div>
       </div>
 
-      <div className="theme-editor-layout">
-        <section className="theme-editor-panel theme-surface">
-          <div className="theme-editor-identity">
+      <div className={`theme-editor-layout${compact ? " theme-editor-layout--compact" : ""}`}>
+        <section className={`theme-editor-panel theme-surface${compact ? " theme-editor-panel--compact" : ""}`}>
+          {!user && sessionPopupVisible && (
+            <div className="theme-editor-popup" role="status" aria-live="polite">
+              You can use all color controls now. Sign in to save this design to your account.
+            </div>
+          )}
+          <div className={`theme-editor-identity${compact ? " theme-editor-identity--compact" : ""}`}>
             <div className="form-group">
               <label htmlFor="theme-name-input">Theme name</label>
               <input
@@ -348,7 +395,7 @@ export default function ThemeEditor() {
                   setDraft((current) => ({ ...current, name: event.target.value }));
                 }}
                 maxLength={40}
-                placeholder="e.g. Ocean Lab"
+                placeholder={user ? "e.g. Ocean Lab" : "Optional until you sign in"}
               />
             </div>
             <div className="prof-sec-title">
@@ -368,13 +415,16 @@ export default function ThemeEditor() {
             </div>
           </div>
 
-          <div className="theme-editor-grid">
+          <div className={`theme-editor-grid${compact ? " theme-editor-grid--compact" : ""}`}>
             {FIELD_META.map((field) => {
               const value = fieldValues[field.slot];
               const invalid = !normalizeHexColor(value);
 
               return (
-                <label key={field.slot} className={`theme-editor-field${invalid ? " is-invalid" : ""}`}>
+                <label
+                  key={field.slot}
+                  className={`theme-editor-field${compact ? " theme-editor-field--compact" : ""}${invalid ? " is-invalid" : ""}`}
+                >
                   <span className="theme-editor-field-label">{field.label}</span>
                   <span className="theme-editor-field-hint">{field.hint}</span>
                   <div className="theme-editor-field-inputs">
@@ -413,13 +463,16 @@ export default function ThemeEditor() {
           )}
         </section>
 
-        <section className="theme-editor-preview">
+        <section className={`theme-editor-preview${compact ? " theme-editor-preview--compact" : ""}`}>
           <div
-            className="theme-preview-root theme-editor-preview-surface"
+            className={`theme-preview-root theme-editor-preview-surface${compact ? " theme-editor-preview-surface--compact" : ""}`}
             data-theme={draft.baseTheme}
             style={previewStyle}
           >
-            <ThemePreview className="theme-showcase-grid theme-editor-preview-grid" />
+            <ThemePreview
+              className={`theme-showcase-grid theme-editor-preview-grid${compact ? " theme-editor-preview-grid--compact" : ""}`}
+              compact={compact}
+            />
           </div>
         </section>
       </div>

@@ -36,6 +36,7 @@ describe("Appearance", () => {
         resolvedTheme: "light",
         customThemes: [CUSTOM_THEME],
         activeCustomThemeId: null,
+        sessionTheme: null,
       });
 
       useAuthStore.setState((state) => ({
@@ -64,6 +65,9 @@ describe("Appearance", () => {
         profile: null,
         loading: false,
       }));
+      useThemeStore.setState({
+        sessionTheme: null,
+      });
     });
   });
 
@@ -94,5 +98,35 @@ describe("Appearance", () => {
     const themeToggleGroup = await screen.findByRole("group", { name: "Theme preference preference" });
     expect(within(themeToggleGroup).getByRole("button", { name: "Ocean Lab" })).toBeInTheDocument();
     expect(await screen.findByLabelText("Theme name")).toBeInTheDocument();
+  });
+
+  it("shows the full appearance controls to guests with session-save messaging", async () => {
+    act(() => {
+      useAuthStore.setState((state) => ({
+        ...state,
+        user: null,
+        profile: null,
+        loading: false,
+      }));
+      useThemeStore.setState({
+        customThemes: [],
+        activeCustomThemeId: null,
+        sessionTheme: null,
+      });
+    });
+
+    render(
+      <MemoryRouter>
+        <Appearance />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Use the full appearance controls before logging in")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign In to Save" })).toHaveAttribute("href", "/login");
+    expect(screen.getByText("Theme Mode")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Apply for this session" })).toBeInTheDocument();
+    expect(
+      screen.queryByText("You can use all color controls now. Sign in to save this design to your account."),
+    ).not.toBeInTheDocument();
   });
 });

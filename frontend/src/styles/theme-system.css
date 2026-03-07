@@ -22,6 +22,90 @@
   gap: 0.6rem;
 }
 
+.appearance-page {
+  padding-bottom: 1rem;
+}
+
+.appearance-page .topbar {
+  padding-bottom: 0.1rem;
+}
+
+.appearance-page__section {
+  min-height: 0;
+}
+
+.appearance-page__stack {
+  gap: 0.6rem;
+}
+
+.appearance-page__guest-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 0.6rem;
+  padding: 0.7rem;
+  align-items: stretch;
+}
+
+.appearance-page__guest-copy {
+  display: grid;
+  gap: 0.35rem;
+  align-content: center;
+}
+
+.appearance-page__guest-inline-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.65rem;
+}
+
+.appearance-page__guest-inline-copy .theme-section-title {
+  font-size: 0.94rem;
+}
+
+.appearance-page__guest-inline-copy .theme-showcase-copy {
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.appearance-page__settings {
+  margin-top: 0;
+  padding: 0.75rem 0.85rem;
+  gap: 0.35rem;
+}
+
+.appearance-page__settings--guest {
+  margin-top: 0;
+  box-shadow: none;
+  border-radius: calc(var(--radius-lg) - 0.15rem);
+}
+
+.appearance-page .theme-toggle {
+  gap: 0.35rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+.appearance-page .theme-toggle__label {
+  font-size: 0.68rem;
+}
+
+.appearance-page .theme-toggle__group {
+  width: 100%;
+  padding: 0.18rem;
+  gap: 0.18rem;
+}
+
+.appearance-page .theme-toggle__button {
+  min-width: 0;
+  padding: 0.46rem 0.7rem;
+  font-size: 0.76rem;
+}
+
+.appearance-page .theme-toggle__meta {
+  font-size: 0.72rem;
+}
+
 .theme-editor-stack {
   display: grid;
   gap: 1rem;
@@ -62,6 +146,11 @@
   line-height: 1.65;
 }
 
+.theme-showcase-card--compact {
+  padding: 0.85rem;
+  gap: 0.55rem;
+}
+
 .theme-showcase-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -76,7 +165,7 @@
 .theme-showcase-card-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 0.94rem;
   letter-spacing: -0.02em;
 }
 
@@ -100,6 +189,25 @@
   box-shadow: var(--shadow-sm);
 }
 
+.theme-showcase-card--compact .theme-showcase-swatches {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem 0.6rem;
+}
+
+.theme-showcase-card--compact .theme-showcase-swatch {
+  gap: 0.45rem;
+}
+
+.theme-showcase-card--compact .theme-showcase-swatch-chip {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+.theme-showcase-card--compact .theme-showcase-copy {
+  line-height: 1.4;
+  font-size: 0.78rem;
+}
+
 .theme-showcase-actions {
   display: flex;
   flex-wrap: wrap;
@@ -120,6 +228,21 @@
   padding: 1.25rem 1.5rem;
   display: grid;
   gap: 1rem;
+}
+
+.theme-editor-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 0.9rem;
+}
+
+.theme-editor-secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .theme-editor-actions {
@@ -244,19 +367,148 @@
   grid-template-columns: 1fr;
 }
 
+.theme-editor-shell--compact {
+  gap: 0.6rem;
+}
+
+.theme-editor-header--compact {
+  padding: 0.78rem 0.9rem;
+  gap: 0.5rem;
+}
+
+.theme-editor-header--compact .theme-showcase-copy {
+  font-size: 0.82rem;
+  line-height: 1.32;
+}
+
+.theme-editor-header--compact .theme-editor-title-row {
+  gap: 0.4rem 0.75rem;
+}
+
+.theme-editor-header--compact .theme-editor-secondary-actions {
+  gap: 0.4rem;
+}
+
+.theme-editor-layout--compact {
+  gap: 0.6rem;
+  grid-template-columns: minmax(0, 1.35fr) minmax(250px, 0.65fr);
+}
+
+.theme-editor-panel--compact,
+.theme-editor-preview-surface--compact {
+  padding: 0.85rem;
+}
+
+.theme-editor-panel--compact {
+  gap: 0.55rem;
+  position: relative;
+}
+
+.theme-editor-identity--compact {
+  gap: 0.45rem;
+}
+
+.theme-editor-grid--compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.theme-editor-field--compact {
+  gap: 0.28rem;
+  padding: 0.5rem;
+}
+
+.theme-editor-field--compact .theme-editor-field-label {
+  font-size: 0.74rem;
+}
+
+.theme-editor-field--compact .theme-editor-field-hint,
+.theme-editor-field--compact .theme-editor-field-error {
+  font-size: 0.68rem;
+}
+
+.theme-editor-field--compact input[type="color"] {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.theme-editor-field--compact input[type="text"] {
+  padding: 0.48rem 0.58rem;
+  font-size: 0.78rem;
+}
+
+.theme-editor-preview--compact {
+  min-width: 0;
+}
+
+.theme-editor-preview-surface--compact {
+  gap: 0.45rem;
+}
+
+.theme-editor-preview-grid--compact {
+  gap: 0.35rem;
+}
+
+.theme-editor-popup {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  max-width: 18rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--red-mid);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--card) 92%, var(--red) 8%);
+  box-shadow: var(--shadow-md);
+  color: var(--text);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.appearance-page .theme-showcase-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 1rem;
+  gap: 0.6rem;
+}
+
 @media (min-width: 980px) {
   .theme-showcase-hero {
     grid-template-columns: minmax(0, 1.25fr) auto;
   }
+
+  .theme-showcase-card--compact .theme-showcase-swatches {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 979px) {
+  .appearance-page__guest-row {
+    grid-template-columns: 1fr;
+  }
+
   .theme-showcase-grid {
     grid-template-columns: 1fr;
   }
 
   .theme-editor-layout {
     grid-template-columns: 1fr;
+  }
+
+  .theme-editor-layout--compact {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-editor-grid--compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .theme-showcase-card--compact .theme-showcase-swatches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme-editor-title-row {
+    align-items: flex-start;
   }
 }
 
@@ -273,5 +525,32 @@
 
   .theme-editor-grid {
     grid-template-columns: 1fr;
+  }
+
+  .theme-editor-grid--compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .appearance-page .theme-showcase-shell {
+    padding: 0.85rem 0.85rem 1rem;
+  }
+
+  .appearance-page__guest-row,
+  .appearance-page__settings,
+  .theme-editor-header--compact,
+  .theme-editor-panel--compact,
+  .theme-editor-preview-surface--compact,
+  .theme-showcase-card--compact {
+    padding: 0.85rem;
+  }
+
+  .theme-showcase-card--compact .theme-showcase-swatches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme-editor-popup {
+    left: 0.75rem;
+    right: 0.75rem;
+    max-width: none;
   }
 }

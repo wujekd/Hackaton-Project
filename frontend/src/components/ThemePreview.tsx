@@ -9,12 +9,13 @@ const SWATCHES = [
 
 interface ThemePreviewProps {
   className?: string;
+  compact?: boolean;
 }
 
-export default function ThemePreview({ className = "theme-showcase-grid" }: ThemePreviewProps) {
+export default function ThemePreview({ className = "theme-showcase-grid", compact = false }: ThemePreviewProps) {
   return (
     <section className={className}>
-      <article className="theme-showcase-card theme-surface">
+      <article className={`theme-showcase-card theme-surface${compact ? " theme-showcase-card--compact" : ""}`}>
         <h2 className="theme-showcase-card-title">Color Tokens</h2>
         <div className="theme-showcase-swatches">
           {SWATCHES.map((swatch) => (
@@ -29,7 +30,7 @@ export default function ThemePreview({ className = "theme-showcase-grid" }: Them
         </div>
       </article>
 
-      <article className="theme-showcase-card theme-surface">
+      <article className={`theme-showcase-card theme-surface${compact ? " theme-showcase-card--compact" : ""}`}>
         <h2 className="theme-showcase-card-title">Interactive States</h2>
         <div className="theme-showcase-actions">
           <button className="btn-primary" type="button">Primary action</button>

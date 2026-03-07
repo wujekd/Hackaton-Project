@@ -77,6 +77,13 @@ export default function CollaborationDetail() {
     () => imageFiles.find((file) => file.url === selectedImageUrl) ?? null,
     [imageFiles, selectedImageUrl],
   );
+  const contentGridClassName = [
+    "detail-grid",
+    "detail-grid-collab",
+    imageFiles.length === 0 ? "detail-grid-no-media" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   useEffect(() => {
     setActiveImageUrl(preferredImageUrl);
@@ -136,147 +143,150 @@ export default function CollaborationDetail() {
             )}
           </section>
 
-          {imageFiles.length > 0 && (
-            <section className="detail-card detail-media-gallery" aria-label="Collaboration gallery">
-              <div className="detail-card-head">
-                <div className="detail-media-heading">
-                  <h2 className="detail-card-title">Gallery</h2>
-                  <span className="detail-card-meta">
-                    {imageFiles.length > 1 && activeImageIndex >= 0 ?
-                      `Image ${activeImageIndex + 1} of ${imageFiles.length}` :
-                      `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"}`}
-                  </span>
+          <div className={contentGridClassName}>
+            {imageFiles.length > 0 && (
+              <section className="detail-card detail-media-gallery" aria-label="Collaboration gallery">
+                <div className="detail-card-head">
+                  <div className="detail-media-heading">
+                    <h2 className="detail-card-title">Gallery</h2>
+                    <span className="detail-card-meta">
+                      {imageFiles.length > 1 && activeImageIndex >= 0 ?
+                        `Image ${activeImageIndex + 1} of ${imageFiles.length}` :
+                        `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"}`}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="detail-media-actions">
-                  {imageFiles.length > 1 && (
-                    <>
-                      <button className="btn-sm outline" type="button" onClick={() => shiftImage(-1)}>
-                        Previous
-                      </button>
-                      <button className="btn-sm outline" type="button" onClick={() => shiftImage(1)}>
-                        Next
-                      </button>
-                    </>
-                  )}
-                  {selectedImageUrl && (
-                    <a
-                      className="detail-media-open-link"
-                      href={selectedImageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open Full Image
-                    </a>
-                  )}
-                </div>
-              </div>
+                <div className={`detail-media-viewer ${imageFiles.length === 1 ? "single" : ""}`.trim()}>
+                  <div className={`detail-media-rail ${imageFiles.length === 1 ? "single" : ""}`.trim()}>
+                    {imageFiles.length > 1 && (
+                      <div className="detail-media-nav">
+                        <button className="btn-sm outline" type="button" onClick={() => shiftImage(-1)}>
+                          Previous
+                        </button>
+                        <button className="btn-sm outline" type="button" onClick={() => shiftImage(1)}>
+                          Next
+                        </button>
+                      </div>
+                    )}
 
-              <div className={`detail-media-viewer ${imageFiles.length === 1 ? "single" : ""}`.trim()}>
-                {imageFiles.length > 1 && (
-                  <div className="detail-media-strip" role="tablist" aria-label="Collaboration images">
-                    {imageFiles.map((file, index) => (
-                      <button
-                        key={`${file.url}-${file.name}`}
-                        className={`detail-media-thumb ${selectedImageUrl === file.url ? "active" : ""}`.trim()}
-                        type="button"
-                        onClick={() => showImageAt(index)}
-                        aria-pressed={selectedImageUrl === file.url}
-                        aria-label={`Show image ${index + 1}: ${file.name}`}
+                    {imageFiles.length > 1 && (
+                      <div className="detail-media-strip" role="tablist" aria-label="Collaboration images">
+                        {imageFiles.map((file, index) => (
+                          <button
+                            key={`${file.url}-${file.name}`}
+                            className={`detail-media-thumb ${selectedImageUrl === file.url ? "active" : ""}`.trim()}
+                            type="button"
+                            onClick={() => showImageAt(index)}
+                            aria-pressed={selectedImageUrl === file.url}
+                            aria-label={`Show image ${index + 1}: ${file.name}`}
+                          >
+                            <img src={file.url} alt={file.name} loading="lazy" />
+                            <span>{file.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedImageUrl && (
+                      <a
+                        className="detail-media-open-link"
+                        href={selectedImageUrl}
+                        target="_blank"
+                        rel="noreferrer"
                       >
-                        <img src={file.url} alt={file.name} loading="lazy" />
-                        <span>{file.name}</span>
-                      </button>
-                    ))}
+                        Open Full Image
+                      </a>
+                    )}
+                  </div>
+
+                  {selectedImageUrl && (
+                    <div className="detail-media-stage">
+                      <img
+                        className="detail-media-stage-image"
+                        src={selectedImageUrl}
+                        alt={selectedImageFile?.name || collaboration.title}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {selectedImageFile && (
+                  <div className="detail-media-caption">
+                    <span>{selectedImageFile.name}</span>
+                    <span>{formatFileSize(selectedImageFile.size)}</span>
                   </div>
                 )}
+              </section>
+            )}
+
+            <div className="detail-side-column">
+              <article className="detail-card">
+                <h2 className="detail-card-title">Details</h2>
+                <div className="detail-item">
+                  <div className="detail-item-label">Posted</div>
+                  <div className="detail-item-value">{formatDateShort(collaboration.createdAt)}</div>
+                </div>
+                <div className="detail-item">
+                  <div className="detail-item-label">Assets</div>
+                  <div className="detail-item-value">
+                    {files.length === 0 ? "No files shared yet." : `${files.length} attached`}
+                  </div>
+                </div>
 
                 {selectedImageUrl && (
-                  <div className="detail-media-stage">
-                    <img
-                      className="detail-media-stage-image"
-                      src={selectedImageUrl}
-                      alt={selectedImageFile?.name || collaboration.title}
-                    />
+                  <div className="detail-item">
+                    <div className="detail-item-label">Media</div>
+                    <div className="detail-item-value">
+                      {imageFiles.length > 0 ?
+                        `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"}` :
+                        "Cover image attached"}
+                    </div>
+                    <div className="detail-item-copy">
+                      <a href={selectedImageUrl} target="_blank" rel="noreferrer">
+                        {selectedImageFile?.name || "Open selected image"}
+                      </a>
+                    </div>
                   </div>
                 )}
-              </div>
 
-              {selectedImageFile && (
-                <div className="detail-media-caption">
-                  <span>{selectedImageFile.name}</span>
-                  <span>{formatFileSize(selectedImageFile.size)}</span>
-                </div>
-              )}
-            </section>
-          )}
-
-          <div className={`detail-grid ${user?.uid === collaboration.authorId ? "detail-grid-single" : ""}`.trim()}>
-            <article className="detail-card">
-              <h2 className="detail-card-title">Details</h2>
-              <div className="detail-item">
-                <div className="detail-item-label">Posted</div>
-                <div className="detail-item-value">{formatDateShort(collaboration.createdAt)}</div>
-              </div>
-              <div className="detail-item">
-                <div className="detail-item-label">Assets</div>
-                <div className="detail-item-value">
-                  {files.length === 0 ? "No files shared yet." : `${files.length} attached`}
-                </div>
-              </div>
-
-              {selectedImageUrl && (
-                <div className="detail-item">
-                  <div className="detail-item-label">Media</div>
-                  <div className="detail-item-value">
-                    {imageFiles.length > 0 ?
-                      `${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"}` :
-                      "Cover image attached"}
+                {downloadFiles.length > 0 && (
+                  <div className="detail-item">
+                    <div className="detail-item-label">Downloads</div>
+                    <div className="detail-item-value">
+                      {downloadFiles.length} file{downloadFiles.length === 1 ? "" : "s"}
+                    </div>
                   </div>
-                  <div className="detail-item-copy">
-                    <a href={selectedImageUrl} target="_blank" rel="noreferrer">
-                      {selectedImageFile?.name || "Open selected image"}
-                    </a>
+                )}
+
+                {downloadFiles.length > 0 && (
+                  <ul className="detail-file-list">
+                    {downloadFiles.map((file) => (
+                      <li key={`${file.url}-${file.name}`}>
+                        <a href={file.url} target="_blank" rel="noreferrer">
+                          {file.name}
+                        </a>
+                        <span>{formatFileSize(file.size)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+
+              {user?.uid !== collaboration.authorId && (
+                <aside className="detail-card">
+                  <h2 className="detail-card-title">Contact</h2>
+                  <div className="detail-actions">
+                    <Link
+                      className="btn-sm accent collab-message-author-cta"
+                      to={buildDirectMessageHref(user?.uid, collaboration.authorId, { username: collaboration.authorName })}
+                    >
+                      Message Project Author
+                    </Link>
                   </div>
-                </div>
+                </aside>
               )}
-
-              {downloadFiles.length > 0 && (
-                <div className="detail-item">
-                  <div className="detail-item-label">Downloads</div>
-                  <div className="detail-item-value">
-                    {downloadFiles.length} file{downloadFiles.length === 1 ? "" : "s"}
-                  </div>
-                </div>
-              )}
-
-              {downloadFiles.length > 0 && (
-                <ul className="detail-file-list">
-                  {downloadFiles.map((file) => (
-                    <li key={`${file.url}-${file.name}`}>
-                      <a href={file.url} target="_blank" rel="noreferrer">
-                        {file.name}
-                      </a>
-                      <span>{formatFileSize(file.size)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </article>
-
-            {user?.uid !== collaboration.authorId && (
-              <aside className="detail-card">
-                <h2 className="detail-card-title">Contact</h2>
-                <div className="detail-actions">
-                  <Link
-                    className="btn-sm accent collab-message-author-cta"
-                    to={buildDirectMessageHref(user?.uid, collaboration.authorId, { username: collaboration.authorName })}
-                  >
-                    Message Project Author
-                  </Link>
-                </div>
-              </aside>
-            )}
+            </div>
           </div>
         </div>
       )}

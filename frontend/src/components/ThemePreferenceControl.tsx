@@ -25,6 +25,7 @@ export default function ThemePreferenceControl({
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const customThemes = useThemeStore((state) => state.customThemes);
   const activeCustomThemeId = useThemeStore((state) => state.activeCustomThemeId);
+  const sessionTheme = useThemeStore((state) => state.sessionTheme);
   const setPreference = useThemeStore((state) => state.setPreference);
   const selectCustomTheme = useThemeStore((state) => state.selectCustomTheme);
   const syncProfileTheme = useThemeStore((state) => state.syncProfileTheme);
@@ -35,7 +36,7 @@ export default function ThemePreferenceControl({
   const activeCustomTheme = getCustomThemeById(customThemes, activeCustomThemeId);
 
   const handleBuiltInSelect = async (nextPreference: ThemePreference) => {
-    if (!activeCustomThemeId && nextPreference === preference) return;
+    if (!sessionTheme && !activeCustomThemeId && nextPreference === preference) return;
 
     const previousThemeState = {
       preference,
@@ -86,8 +87,8 @@ export default function ThemePreferenceControl({
           <button
             key={option.value}
             type="button"
-            className={`theme-toggle__button${!activeCustomThemeId && preference === option.value ? " is-active" : ""}`}
-            aria-pressed={!activeCustomThemeId && preference === option.value}
+            className={`theme-toggle__button${!sessionTheme && !activeCustomThemeId && preference === option.value ? " is-active" : ""}`}
+            aria-pressed={!sessionTheme && !activeCustomThemeId && preference === option.value}
             onClick={() => void handleBuiltInSelect(option.value)}
           >
             {option.label}
@@ -107,7 +108,9 @@ export default function ThemePreferenceControl({
       </div>
       {meta && (
         <span className="theme-toggle__meta">
-          {activeCustomTheme
+          {sessionTheme
+            ? `Using session theme • ${sessionTheme.baseTheme} • Sign in to save it`
+            : activeCustomTheme
             ? `Using ${activeCustomTheme.name} • ${activeCustomTheme.baseTheme}`
             : preference === "system"
               ? `Following system • ${resolvedTheme}`

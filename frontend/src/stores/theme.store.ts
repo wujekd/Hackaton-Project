@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   applyCustomTheme,
   applyResolvedTheme,
+  cloneCustomTheme,
   cloneCustomThemes,
   readStoredActiveCustomThemeId,
   readStoredCustomThemes,
@@ -20,6 +21,7 @@ interface ThemeState {
   resolvedTheme: ResolvedTheme;
   customThemes: CustomTheme[];
   activeCustomThemeId: string | null;
+  sessionTheme: CustomTheme | null;
   hydrate: () => void;
   resetToGuestDefault: () => void;
   syncProfileTheme: (profile: {
@@ -30,6 +32,7 @@ interface ThemeState {
   setPreference: (preference: ThemePreference) => void;
   selectCustomTheme: (customThemeId: string) => void;
   setCustomThemes: (customThemes: CustomTheme[], activeCustomThemeId: string | null) => void;
+  applySessionTheme: (customTheme: CustomTheme) => void;
 }
 
 let stopSystemSync: (() => void) | null = null;
@@ -71,6 +74,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   resolvedTheme: "light",
   customThemes: [],
   activeCustomThemeId: null,
+  sessionTheme: null,
 
   hydrate: () => {
     if (!stopSystemSync) {
@@ -88,12 +92,12 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     const nextState = commitThemeState(initialPreference, initialCustomThemes, initialActiveCustomThemeId, {
       animate: false,
     });
-    set({ ...nextState, hydrated: true });
+    set({ ...nextState, sessionTheme: null, hydrated: true });
   },
 
   resetToGuestDefault: () => {
     const nextState = commitThemeStateWithAnimation("system", [], null);
-    set({ ...nextState, hydrated: true });
+    set({ ...nextState, sessionTheme: null, hydrated: true });
   },
 
   syncProfileTheme: ({ preference, customThemes, activeCustomThemeId }) => {
@@ -104,12 +108,12 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     const nextActiveCustomThemeId =
       typeof activeCustomThemeId === "undefined" ? get().activeCustomThemeId : activeCustomThemeId;
     const nextState = commitThemeStateWithAnimation(nextPreference, nextCustomThemes, nextActiveCustomThemeId);
-    set({ ...nextState, hydrated: true });
+    set({ ...nextState, sessionTheme: null, hydrated: true });
   },
 
   setPreference: (preference) => {
     const nextState = commitThemeStateWithAnimation(preference, get().customThemes, null);
-    set({ ...nextState, hydrated: true });
+    set({ ...nextState, sessionTheme: null, hydrated: true });
   },
 
   selectCustomTheme: (customThemeId) => {
@@ -117,11 +121,23 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     if (!current.customThemes.some((customTheme) => customTheme.id === customThemeId)) return;
 
     const nextState = commitThemeStateWithAnimation(current.preference, current.customThemes, customThemeId);
-    set({ ...nextState, hydrated: true });
+    set({ ...nextState, sessionTheme: null, hydrated: true });
   },
 
   setCustomThemes: (customThemes, activeCustomThemeId) => {
     const nextState = commitThemeStateWithAnimation(get().preference, customThemes, activeCustomThemeId);
-    set({ ...nextState, hydrated: true });
+    set({ ...nextState, sessionTheme: null, hydrated: true });
+  },
+
+  applySessionTheme: (customTheme) => {
+    const nextSessionTheme = cloneCustomTheme(customTheme);
+    applyCustomTheme(nextSessionTheme);
+    applyResolvedTheme(nextSessionTheme.baseTheme, { animate: true });
+    set({
+      resolvedTheme: nextSessionTheme.baseTheme,
+      activeCustomThemeId: null,
+      sessionTheme: nextSessionTheme,
+      hydrated: true,
+    });
   },
 }));

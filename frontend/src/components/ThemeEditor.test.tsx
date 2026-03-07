@@ -34,6 +34,7 @@ describe("ThemeEditor", () => {
         resolvedTheme: "light",
         customThemes: [],
         activeCustomThemeId: null,
+        sessionTheme: null,
       });
 
       useAuthStore.setState((state) => ({
@@ -66,6 +67,7 @@ describe("ThemeEditor", () => {
       useThemeStore.setState({
         customThemes: [],
         activeCustomThemeId: null,
+        sessionTheme: null,
       });
     });
   });
@@ -167,5 +169,42 @@ describe("ThemeEditor", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "New theme" }));
     expect(screen.getByLabelText("Theme name")).toHaveValue("");
+  });
+
+  it("lets guests apply a theme for the current session without saving a preset", () => {
+    act(() => {
+      useAuthStore.setState((state) => ({
+        ...state,
+        user: null,
+        profile: null,
+        updateCustomThemes: vi.fn(),
+      }));
+    });
+
+    const { unmount } = render(<ThemeEditor />);
+
+    expect(
+      screen.queryByText("You can use all color controls now. Sign in to save this design to your account."),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+    fireEvent.change(screen.getByLabelText("Canvas color"), { target: { value: "#112233" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply for this session" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "You can use all color controls now. Sign in to save this design to your account.",
+    );
+    expect(useThemeStore.getState().sessionTheme).toEqual(
+      expect.objectContaining({
+        name: "Session Theme",
+        baseTheme: "dark",
+        palette: expect.objectContaining({ canvas: "#112233" }),
+      }),
+    );
+
+    unmount();
+
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(document.documentElement.style.getPropertyValue("--theme-dark-canvas-override")).toBe("#112233");
   });
 });
