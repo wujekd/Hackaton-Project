@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import CollabListItem, { type CollabListItemModel } from "../components/CollabListItem";
+import ConfirmDialog from "../components/ConfirmDialog";
 import TagInput from "../components/TagInput";
 import { CollaborationService } from "../services/collaboration.service";
 import { useAuthStore } from "../stores/auth.store";
@@ -75,6 +76,8 @@ export default function CreateCollaboration() {
   const [selectedThumbnail, setSelectedThumbnail] = useState<ThumbnailDraft>(null);
   const [mediaWindow, setMediaWindow] = useState<MediaWindow>(DEFAULT_MEDIA_WINDOW);
   const [error, setError] = useState("");
+  const [showPhotoRequiredModal, setShowPhotoRequiredModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -96,6 +99,7 @@ export default function CreateCollaboration() {
     () => pendingFiles.filter((file) => !!file.previewUrl && isImageMimeType(file.file.type)),
     [pendingFiles],
   );
+  const hasAnyImage = existingImageFiles.length > 0 || newImageFiles.length > 0;
 
   const updateMediaWindow = (next: Partial<MediaWindow>) => {
     setMediaWindow((prev) => {
@@ -221,6 +225,9 @@ export default function CreateCollaboration() {
     }));
 
     setPendingFiles((prev) => [...prev, ...nextPending]);
+    if (nextPending.some((file) => !!file.previewUrl)) {
+      setShowPhotoRequiredModal(false);
+    }
     setSelectedThumbnail((current) => {
       if (current) return current;
       const firstNewImage = nextPending.find((file) => !!file.previewUrl);
@@ -356,6 +363,11 @@ export default function CreateCollaboration() {
       return;
     }
 
+    if (!isEditMode && !hasAnyImage) {
+      setShowPhotoRequiredModal(true);
+      return;
+    }
+
     setError("");
     setSaving(true);
     try {
@@ -418,8 +430,6 @@ export default function CreateCollaboration() {
       setError("You can only delete your own collaboration.");
       return;
     }
-    if (!window.confirm("Delete this collaboration? This cannot be undone.")) return;
-
     setError("");
     setDeleting(true);
     try {
@@ -429,11 +439,52 @@ export default function CreateCollaboration() {
       setError(err instanceof Error ? err.message : "Failed to delete collaboration.");
     } finally {
       setDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
   return (
     <div className="page-view">
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title="Delete this collaboration?"
+        message="This cannot be undone."
+        confirmLabel={deleting ? "Deleting..." : "Delete collaboration"}
+        busy={deleting}
+        onCancel={() => setShowDeleteDialog(false)}
+        onConfirm={() => void handleDelete()}
+      />
+      {showPhotoRequiredModal && (
+        <div
+          className="collab-photo-modal"
+          role="presentation"
+          onClick={() => setShowPhotoRequiredModal(false)}
+        >
+          <div
+            className="collab-photo-modal__panel theme-surface"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="collab-photo-required-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="collab-photo-required-title">Photo required</h2>
+            <p>A photo is needed in order to publish a collab.</p>
+            <ul className="collab-photo-modal__tips">
+              <li>You can search the internet for relevant photos.</li>
+              <li>You may use Generative AI to generate photos for you.</li>
+            </ul>
+            <div className="collab-photo-modal__actions">
+              <button
+                className="btn-sm outline"
+                type="button"
+                onClick={() => setShowPhotoRequiredModal(false)}
+              >
+                Go back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="topbar">
         <div className="topbar-title">
           <span>{isEditMode ? "Edit Collab" : "Post a Collab"}</span>
@@ -451,7 +502,7 @@ export default function CreateCollaboration() {
             <button
               className="btn-sm outline collab-editor-delete"
               type="button"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteDialog(true)}
               disabled={loadingExisting || saving || deleting || !isLoggedIn || isUnauthorizedEdit}
             >
               {deleting ? "Deleting..." : "Delete Colaboration"}

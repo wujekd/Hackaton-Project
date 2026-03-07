@@ -92,6 +92,17 @@ type ClosePollPayload = {
   pollId?: unknown;
 };
 
+type FeedbackDoc = {
+  uid?: unknown;
+  userName?: unknown;
+  userEmail?: unknown;
+  subject?: unknown;
+  message?: unknown;
+  route?: unknown;
+  contextLabel?: unknown;
+  createdAt?: unknown;
+};
+
 type CastPollVotePayload = {
   pollId?: unknown;
   optionId?: unknown;
@@ -501,6 +512,42 @@ export const listPolls = onCall({
           computeTotalVotes(options),
         createdAt: toIso(data.createdAt),
         updatedAt: toIso(data.updatedAt),
+      };
+    }),
+  };
+});
+
+export const listFeedback = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  await assertAdmin(uid);
+
+  const snapshot = await db
+    .collection("feedback")
+    .orderBy("createdAt", "desc")
+    .limit(100)
+    .get();
+
+  return {
+    status: "ok",
+    feedback: snapshot.docs.map((doc) => {
+      const data = doc.data() as FeedbackDoc;
+      return {
+        id: doc.id,
+        uid: asOptionalString(data.uid, 180),
+        userName: asOptionalString(data.userName, 120) || null,
+        userEmail: asOptionalString(data.userEmail, 180) || null,
+        subject: asOptionalString(data.subject, 80) || "General Feedback",
+        message: asOptionalString(data.message, 2000),
+        route: asOptionalString(data.route, 200),
+        contextLabel: asOptionalString(data.contextLabel, 80),
+        createdAt: toIso(data.createdAt),
       };
     }),
   };

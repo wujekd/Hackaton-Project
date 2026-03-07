@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAuthStore } from "../stores/auth.store";
 import { useMessagingStore } from "../stores/messaging.store";
+import FeedbackOverlay from "./FeedbackOverlay";
 import ThemePreferenceControl from "./ThemePreferenceControl";
 
 function HomeIcon() {
@@ -139,9 +140,21 @@ function MobileTabItem({ to, label, icon, end, onSelect }: MobileTabItemProps) {
 }
 
 export default function Layout() {
+  const feedbackSubjects = [
+    "Home",
+    "Collabs",
+    "Events",
+    "Schedule",
+    "Messages",
+    "My Account",
+    "Appearance",
+    "General Feedback",
+  ];
   const location = useLocation();
   const isMobile = useMediaQuery("(max-width: 1023px)");
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
   const { user, profile, signOut, loading } = useAuthStore();
   const unreadTotal = useMessagingStore((state) => state.unreadTotal);
   const listenConversations = useMessagingStore((state) => state.listenConversations);
@@ -186,10 +199,30 @@ export default function Layout() {
     location.pathname.startsWith("/account") ||
     location.pathname.startsWith("/appearance") ||
     location.pathname.startsWith("/admin");
+  const currentFeedbackSubject =
+    location.pathname === "/" ? "Home" :
+    location.pathname.startsWith("/collaborations") ? "Collabs" :
+    location.pathname.startsWith("/events") ? "Events" :
+    location.pathname.startsWith("/schedule") ? "Schedule" :
+    location.pathname.startsWith("/messages") ? "Messages" :
+    location.pathname.startsWith("/account") ? "My Account" :
+    location.pathname.startsWith("/appearance") ? "Appearance" :
+    "General Feedback";
+
+  useEffect(() => {
+    if (!feedbackNotice) return;
+    const timer = window.setTimeout(() => setFeedbackNotice(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [feedbackNotice]);
 
   const handleMobileSignOut = async () => {
     await signOut();
     setIsMoreOpen(false);
+  };
+
+  const handleOpenFeedback = () => {
+    setFeedbackNotice(null);
+    setIsFeedbackOpen(true);
   };
 
   if (isAuthRoute) {
@@ -232,6 +265,20 @@ export default function Layout() {
           </div>
 
           <div className="sidebar-spacer" />
+
+          {user && (
+            <div className="sidebar-feedback theme-surface">
+              <button type="button" className="sidebar-feedback__trigger" onClick={handleOpenFeedback}>
+                <span className="sidebar-feedback__eyebrow">Help Us Improve!</span>
+                <span className="sidebar-feedback__copy">Send feedback about this page or another part of the app.</span>
+              </button>
+              {feedbackNotice && (
+                <div className="auth-notice auth-notice-inline sidebar-feedback__notice" role="status">
+                  {feedbackNotice}
+                </div>
+              )}
+            </div>
+          )}
 
           <NavLink className="sidebar-user" to="/account">
             <div className="avatar av-red" style={{ width: 30, height: 30, fontSize: 10 }}>
@@ -330,6 +377,19 @@ export default function Layout() {
             </div>
 
             <div className="mobile-more-links">
+              {user && (
+                <div className="mobile-feedback-block">
+                  <button type="button" className="sidebar-feedback__trigger" onClick={handleOpenFeedback}>
+                    <span className="sidebar-feedback__eyebrow">Help Us Improve!</span>
+                    <span className="sidebar-feedback__copy">Send quick feedback about what you’re seeing.</span>
+                  </button>
+                  {feedbackNotice && (
+                    <div className="auth-notice auth-notice-inline sidebar-feedback__notice" role="status">
+                      {feedbackNotice}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="mobile-more-theme">
                 <ThemePreferenceControl label="Theme" compact />
               </div>
@@ -385,6 +445,20 @@ export default function Layout() {
           </section>
         </>
       )}
+
+      <FeedbackOverlay
+        isOpen={isFeedbackOpen}
+        initialSubject={currentFeedbackSubject}
+        subjectOptions={feedbackSubjects}
+        routePath={location.pathname}
+        user={user ? { uid: user.uid, name: displayName, email: user.email ?? undefined } : null}
+        onClose={() => setIsFeedbackOpen(false)}
+        onSubmitted={(notice) => {
+          setFeedbackNotice(notice);
+          setIsFeedbackOpen(false);
+          setIsMoreOpen(false);
+        }}
+      />
     </div>
   );
 }

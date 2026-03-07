@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import ConfirmDialog from "../components/ConfirmDialog";
 import {
   CollaborationService,
   type CollaborationCursor,
 } from "../services/collaboration.service";
 import { EventService } from "../services/event.service";
+import { FeedbackService } from "../services/feedback.service";
 import { PollService } from "../services/poll.service";
 import { useAuthStore } from "../stores/auth.store";
 import type { Collaboration } from "../types/collaboration";
 import type { EventItem, EventProposal } from "../types/event";
+import type { FeedbackEntry } from "../types/feedback";
 import type { PollSummary } from "../types/poll";
 import { formatDateShort, formatDateTime } from "../utils/date";
 import { getCollaborationCoverImageUrl } from "../utils/collaboration";
 
-type ModerationTab = "events" | "polls" | "collabs";
+type ModerationTab = "events" | "polls" | "collabs" | "feedback";
 
 const COLLABS_PAGE_SIZE = 20;
 
@@ -39,6 +42,10 @@ export default function Moderation() {
   const [collabsLoaded, setCollabsLoaded] = useState(false);
   const [collabsLoading, setCollabsLoading] = useState(false);
   const [collabsLoadingMore, setCollabsLoadingMore] = useState(false);
+  const [feedbackItems, setFeedbackItems] = useState<FeedbackEntry[]>([]);
+  const [feedbackLoaded, setFeedbackLoaded] = useState(false);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [pendingEventDelete, setPendingEventDelete] = useState<EventItem | null>(null);
 
   const isAdmin = profile?.admin === true;
 
@@ -98,6 +105,33 @@ export default function Moderation() {
     };
   }, [activeTab, collabsLoaded, isAdmin]);
 
+  useEffect(() => {
+    if (!isAdmin || activeTab !== "feedback" || feedbackLoaded) return;
+
+    let cancelled = false;
+    setError(null);
+    setFeedbackLoading(true);
+
+    FeedbackService.list()
+      .then((items) => {
+        if (cancelled) return;
+        setFeedbackItems(items);
+        setFeedbackLoaded(true);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load feedback.");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setFeedbackLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, feedbackLoaded, isAdmin]);
+
   if (authLoading) return null;
   if (!isAdmin) return <Navigate to="/" replace />;
 
@@ -133,15 +167,18 @@ export default function Moderation() {
   };
 
   const handleDeleteEvent = async (event: EventItem) => {
-    const shouldDelete = window.confirm(
-      `Delete "${event.name}"?\n\nThis will also remove every user's signup for this event.`,
-    );
-    if (!shouldDelete) return;
+    setPendingEventDelete(event);
+  };
 
-    setActing(`event:${event.id}`);
+  const confirmDeleteEvent = async () => {
+    if (!pendingEventDelete) return;
+
+    const eventId = pendingEventDelete.id;
+    setActing(`event:${eventId}`);
     try {
-      await EventService.deleteEventAsAdmin(event.id);
-      setEvents((prev) => prev.filter((item) => item.id !== event.id));
+      await EventService.deleteEventAsAdmin(eventId);
+      setEvents((prev) => prev.filter((item) => item.id !== eventId));
+      setPendingEventDelete(null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to delete event");
     } finally {
@@ -227,6 +264,15 @@ export default function Moderation() {
 
   return (
     <div className="page-view">
+      <ConfirmDialog
+        isOpen={pendingEventDelete !== null}
+        title={pendingEventDelete ? `Delete "${pendingEventDelete.name}"?` : "Delete event?"}
+        message="This will also remove every user's signup for this event."
+        confirmLabel={pendingEventDelete && acting === `event:${pendingEventDelete.id}` ? "Deleting..." : "Delete event"}
+        busy={pendingEventDelete ? acting === `event:${pendingEventDelete.id}` : false}
+        onCancel={() => setPendingEventDelete(null)}
+        onConfirm={() => void confirmDeleteEvent()}
+      />
       <div className="topbar">
         <div className="topbar-title">
           Admin <span>Moderation</span>
@@ -254,6 +300,13 @@ export default function Moderation() {
           onClick={() => setActiveTab("collabs")}
         >
           Collabs
+        </button>
+        <button
+          className={`filter-pill ${activeTab === "feedback" ? "active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("feedback")}
+        >
+          Feedback
         </button>
       </div>
 
@@ -474,6 +527,39 @@ export default function Moderation() {
               {collabsLoadingMore ? "Loading..." : "Load More"}
             </button>
           )}
+        </div>
+      )}
+
+      {activeTab === "feedback" && (
+        <div className="mod-list">
+          <h2 className="event-title">Student Feedback</h2>
+          {!feedbackLoaded && feedbackLoading && (
+            <div className="empty-state">Loading feedback...</div>
+          )}
+          {feedbackLoaded && feedbackItems.length === 0 && (
+            <div className="empty-state">No feedback has been submitted yet.</div>
+          )}
+          {feedbackItems.map((item) => (
+            <article className="mod-card" key={item.id}>
+              <div className="mod-card__img b2" />
+              <div className="mod-card__body">
+                <h3 className="event-title">{item.subject}</h3>
+                <span className="event-date">Submitted {formatDateTime(item.createdAt)}</span>
+                <span className="mod-card__author">
+                  {item.userName || item.userEmail || item.uid}
+                </span>
+                {(item.userName || item.userEmail) && (
+                  <span className="mod-card__author">
+                    {item.userEmail || item.uid}
+                  </span>
+                )}
+                <span className="mod-card__author">
+                  {item.contextLabel || "General Feedback"} • {item.route || "-"}
+                </span>
+                <p className="collab-desc">{item.message}</p>
+              </div>
+            </article>
+          ))}
         </div>
       )}
     </div>

@@ -1,12 +1,19 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import type { User } from "firebase/auth";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import Layout from "./Layout";
+import { FeedbackService } from "../services/feedback.service";
 import { useAuthStore } from "../stores/auth.store";
 import { useMessagingStore } from "../stores/messaging.store";
 import { useThemeStore } from "../stores/theme.store";
 import { mockViewportWidth } from "../test/matchMedia";
+
+vi.mock("../services/feedback.service", () => ({
+  FeedbackService: {
+    create: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 
 interface RenderLayoutOptions {
   route?: string;
@@ -88,6 +95,8 @@ function renderLayout({
 
 describe("Layout mobile shell", () => {
   afterEach(() => {
+    vi.clearAllMocks();
+
     act(() => {
       useAuthStore.setState((state) => ({
         ...state,
@@ -153,6 +162,7 @@ describe("Layout mobile shell", () => {
     expect(screen.getByRole("navigation", { name: "Primary sidebar" })).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Primary mobile navigation" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Appearance" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Help Us Improve!/i })).toBeInTheDocument();
   });
 
   it("shows unread badge count from messaging store", () => {
@@ -170,5 +180,41 @@ describe("Layout mobile shell", () => {
 
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(window.localStorage.getItem("mdx-theme-preference")).toBe("dark");
+  });
+
+  it("prefills the feedback subject from the current route", () => {
+    renderLayout({ route: "/appearance", width: 1280 });
+
+    fireEvent.click(screen.getByRole("button", { name: /Help Us Improve!/i }));
+
+    expect(screen.getByRole("dialog", { name: "Help us improve MDX Collab" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Subject")).toHaveValue("Appearance");
+  });
+
+  it("submits feedback and shows a confirmation notice", async () => {
+    const createFeedback = vi.mocked(FeedbackService.create);
+    renderLayout({ route: "/messages", width: 1280 });
+
+    fireEvent.click(screen.getByRole("button", { name: /Help Us Improve!/i }));
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "The message list needs stronger unread contrast." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send Feedback" }));
+
+    await waitFor(() => {
+      expect(createFeedback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subject: "Messages",
+          route: "/messages",
+          message: "The message list needs stronger unread contrast.",
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Help us improve MDX Collab" })).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("status")).toHaveTextContent("Thanks for sharing feedback about Messages.");
   });
 });
