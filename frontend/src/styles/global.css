@@ -280,12 +280,25 @@ select {
   color: var(--text);
   border-radius: var(--radius-md);
   transition: background 0.15s ease, transform 0.15s ease;
+  animation: feedback-pulse 3.5s ease-in-out infinite;
+}
+
+@keyframes feedback-pulse {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+  50% {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 18px color-mix(in srgb, var(--red) 28%, transparent);
+  }
 }
 
 .sidebar-feedback__trigger:hover,
 .sidebar-feedback__trigger:focus-visible {
   background: var(--bg3);
   transform: translateY(-1px);
+  animation: none;
 }
 
 .sidebar-feedback__trigger:focus-visible {
