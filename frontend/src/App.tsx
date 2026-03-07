@@ -117,9 +117,9 @@ const router = createBrowserRouter([
 
 export default function App() {
   const init = useAuthStore((s) => s.init);
-  const profileThemePreference = useAuthStore((s) => s.profile?.themePreference);
+  const profile = useAuthStore((s) => s.profile);
   const hydrateTheme = useThemeStore((state) => state.hydrate);
-  const syncProfilePreference = useThemeStore((state) => state.syncProfilePreference);
+  const syncProfileTheme = useThemeStore((state) => state.syncProfileTheme);
 
   useEffect(() => {
     const unsub = init();
@@ -131,8 +131,13 @@ export default function App() {
   }, [hydrateTheme]);
 
   useEffect(() => {
-    syncProfilePreference(profileThemePreference);
-  }, [profileThemePreference, syncProfilePreference]);
+    if (!profile) return;
+    syncProfileTheme({
+      preference: profile.themePreference,
+      customThemes: profile.customThemes ?? [],
+      activeCustomThemeId: profile.activeCustomThemeId ?? null,
+    });
+  }, [profile, syncProfileTheme]);
 
   return <RouterProvider router={router} />;
 }

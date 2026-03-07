@@ -70,7 +70,7 @@ Services should use try/catch and map errors to user-friendly messages.
 - `styles/global.css` + smaller companion stylesheets handle app layout and legacy view styling.
 - Theme state is applied via `data-theme` on `<html>` and persisted as `mdx-theme-preference`.
 - Prefer semantic CSS custom properties (`var(--bg)`, `var(--card)`, `var(--text)`, `var(--red)`) instead of hard-coded colors.
-- Contributor guidance lives in `docs/theming.md`.
+- Contributor guidance lives in `../../docs/themes/README.md`.
 
 ## Testing
 

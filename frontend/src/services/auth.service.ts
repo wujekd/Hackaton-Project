@@ -8,19 +8,45 @@ import {
   type User,
   type Unsubscribe,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { deleteField, doc, getDoc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import type { UserProfile } from "../types/auth";
-import type { ThemePreference } from "../types/theme";
+import type { CustomTheme, ThemePreference } from "../types/theme";
+import { normalizeCustomThemes, sanitizeActiveCustomThemeId } from "./theme.service";
 
 const googleProvider = new GoogleAuthProvider();
+
+function normalizeUserProfile(profile: UserProfile): UserProfile {
+  const source = profile as UserProfile & {
+    customTheme?: unknown;
+    customThemes?: unknown;
+    activeCustomThemeId?: unknown;
+  };
+  const customThemes = normalizeCustomThemes(source.customThemes ?? source.customTheme) ?? [];
+  const explicitActiveCustomThemeId =
+    typeof source.activeCustomThemeId === "string" ? source.activeCustomThemeId : null;
+  const legacyActiveCustomThemeId =
+    source.customTheme && source.themePreference && source.themePreference !== "system"
+      ? customThemes.find((customTheme) => customTheme.baseTheme === source.themePreference)?.id ?? null
+      : null;
+  const activeCustomThemeId = sanitizeActiveCustomThemeId(
+    explicitActiveCustomThemeId ?? legacyActiveCustomThemeId,
+    customThemes,
+  );
+
+  return {
+    ...profile,
+    customThemes: customThemes.length > 0 ? customThemes : undefined,
+    activeCustomThemeId: activeCustomThemeId ?? undefined,
+  };
+}
 
 async function ensureUserDoc(user: User): Promise<UserProfile> {
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
 
   if (snap.exists()) {
-    return snap.data() as UserProfile;
+    return normalizeUserProfile(snap.data() as UserProfile);
   }
 
   const profile: Omit<UserProfile, "createdAt"> & { createdAt: ReturnType<typeof serverTimestamp> } = {
@@ -35,7 +61,7 @@ async function ensureUserDoc(user: User): Promise<UserProfile> {
 
   await setDoc(ref, profile);
   const fresh = await getDoc(ref);
-  return fresh.data() as UserProfile;
+  return normalizeUserProfile(fresh.data() as UserProfile);
 }
 
 export const AuthService = {
@@ -48,15 +74,15 @@ export const AuthService = {
   signUp: async (email: string, password: string, username?: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const ref = doc(db, "users", cred.user.uid);
-      await setDoc(ref, {
-        uid: cred.user.uid,
-        email,
-        username: username ?? null,
-        nickname: "",
-        description: "",
-        themePreference: "system",
-        createdAt: serverTimestamp(),
-      });
+    await setDoc(ref, {
+      uid: cred.user.uid,
+      email,
+      username: username ?? null,
+      nickname: "",
+      description: "",
+      themePreference: "system",
+      createdAt: serverTimestamp(),
+    });
     return cred;
   },
 
@@ -75,7 +101,7 @@ export const AuthService = {
 
   getUserProfile: async (uid: string): Promise<UserProfile | null> => {
     const snap = await getDoc(doc(db, "users", uid));
-    return snap.exists() ? (snap.data() as UserProfile) : null;
+    return snap.exists() ? normalizeUserProfile(snap.data() as UserProfile) : null;
   },
 
   updateInterests: async (uid: string, interests: string[]): Promise<void> => {
@@ -90,7 +116,31 @@ export const AuthService = {
     await updateDoc(doc(db, "users", uid), { nickname });
   },
 
-  updateThemePreference: async (uid: string, themePreference: ThemePreference): Promise<void> => {
-    await updateDoc(doc(db, "users", uid), { themePreference });
+  updateThemeSelection: async (
+    uid: string,
+    selection: { themePreference?: ThemePreference; activeCustomThemeId?: string | null },
+  ): Promise<void> => {
+    const updates: Record<string, unknown> = {};
+
+    if (selection.themePreference) {
+      updates.themePreference = selection.themePreference;
+    }
+
+    if ("activeCustomThemeId" in selection) {
+      updates.activeCustomThemeId = selection.activeCustomThemeId ?? deleteField();
+    }
+
+    await updateDoc(doc(db, "users", uid), updates);
+  },
+
+  updateCustomThemes: async (
+    uid: string,
+    customThemes: CustomTheme[],
+    activeCustomThemeId: string | null,
+  ): Promise<void> => {
+    await updateDoc(doc(db, "users", uid), {
+      customThemes: customThemes.length > 0 ? customThemes : deleteField(),
+      activeCustomThemeId: activeCustomThemeId ?? deleteField(),
+    });
   },
 };

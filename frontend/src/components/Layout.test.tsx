@@ -43,6 +43,8 @@ function renderLayout({
           }
         : null,
       loading: false,
+      updateThemeSelection: vi.fn().mockResolvedValue(undefined),
+      updateCustomThemes: vi.fn().mockResolvedValue(undefined),
     }));
 
     useMessagingStore.setState((state) => ({
@@ -56,6 +58,8 @@ function renderLayout({
       hydrated: true,
       preference: "system",
       resolvedTheme: "light",
+      customThemes: [],
+      activeCustomThemeId: null,
     });
   });
 
@@ -89,6 +93,8 @@ describe("Layout mobile shell", () => {
         user: null,
         profile: null,
         loading: false,
+        updateThemeSelection: vi.fn().mockResolvedValue(undefined),
+        updateCustomThemes: vi.fn().mockResolvedValue(undefined),
       }));
 
       useMessagingStore.setState((state) => ({
@@ -102,6 +108,8 @@ describe("Layout mobile shell", () => {
         hydrated: false,
         preference: "system",
         resolvedTheme: "light",
+        customThemes: [],
+        activeCustomThemeId: null,
       });
     });
   });

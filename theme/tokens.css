@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap");
 
-:root {
+:root,
+.theme-preview-root {
   --font-sans: "DM Sans", "Segoe UI", sans-serif;
   --font-display: "Syne", "Segoe UI", sans-serif;
   --font-mono: "Fira Code", ui-monospace, monospace;
@@ -19,9 +20,9 @@
   --radius-xl: 1.5rem;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 10px 30px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 18px 48px rgba(15, 23, 42, 0.1);
-  --shadow-lg: 0 30px 70px rgba(15, 23, 42, 0.16);
+  --shadow-sm: 0 10px 30px color-mix(in srgb, var(--theme-shadow-ink, #0f172a) 6%, transparent);
+  --shadow-md: 0 18px 48px color-mix(in srgb, var(--theme-shadow-ink, #0f172a) 10%, transparent);
+  --shadow-lg: 0 30px 70px color-mix(in srgb, var(--theme-shadow-ink, #0f172a) 16%, transparent);
 
   --motion-fast: 140ms;
   --motion-base: 220ms;
@@ -31,79 +32,127 @@
 
   --layout-max-width: 1280px;
   --sidebar-width: 216px;
+
+  --theme-light-canvas-default: #F4F6FB;
+  --theme-light-surface-default: #FFFFFF;
+  --theme-light-card-default: #FFFFFF;
+  --theme-light-text-default: #121722;
+  --theme-light-mutedText-default: #586174;
+  --theme-light-accent-default: #C01639;
+  --theme-light-success-default: #087A59;
+  --theme-light-warning-default: #AB6B12;
+  --theme-light-danger-default: #C53F57;
+
+  --theme-dark-canvas-default: #0C0D10;
+  --theme-dark-surface-default: #111318;
+  --theme-dark-card-default: #1C1F27;
+  --theme-dark-text-default: #F2F4FA;
+  --theme-dark-mutedText-default: #B0B5D0;
+  --theme-dark-accent-default: #D4002A;
+  --theme-dark-success-default: #00BE82;
+  --theme-dark-warning-default: #F0B44D;
+  --theme-dark-danger-default: #FF5A72;
+
+  --theme-light-canvas: var(--theme-light-canvas-override, var(--theme-light-canvas-default));
+  --theme-light-surface: var(--theme-light-surface-override, var(--theme-light-surface-default));
+  --theme-light-card: var(--theme-light-card-override, var(--theme-light-card-default));
+  --theme-light-text: var(--theme-light-text-override, var(--theme-light-text-default));
+  --theme-light-mutedText: var(--theme-light-mutedText-override, var(--theme-light-mutedText-default));
+  --theme-light-accent: var(--theme-light-accent-override, var(--theme-light-accent-default));
+  --theme-light-success: var(--theme-light-success-override, var(--theme-light-success-default));
+  --theme-light-warning: var(--theme-light-warning-override, var(--theme-light-warning-default));
+  --theme-light-danger: var(--theme-light-danger-override, var(--theme-light-danger-default));
+
+  --theme-dark-canvas: var(--theme-dark-canvas-override, var(--theme-dark-canvas-default));
+  --theme-dark-surface: var(--theme-dark-surface-override, var(--theme-dark-surface-default));
+  --theme-dark-card: var(--theme-dark-card-override, var(--theme-dark-card-default));
+  --theme-dark-text: var(--theme-dark-text-override, var(--theme-dark-text-default));
+  --theme-dark-mutedText: var(--theme-dark-mutedText-override, var(--theme-dark-mutedText-default));
+  --theme-dark-accent: var(--theme-dark-accent-override, var(--theme-dark-accent-default));
+  --theme-dark-success: var(--theme-dark-success-override, var(--theme-dark-success-default));
+  --theme-dark-warning: var(--theme-dark-warning-override, var(--theme-dark-warning-default));
+  --theme-dark-danger: var(--theme-dark-danger-override, var(--theme-dark-danger-default));
 }
 
 :root,
-:root[data-theme="light"] {
+:root[data-theme="light"],
+.theme-preview-root,
+.theme-preview-root[data-theme="light"] {
   color-scheme: light;
 
-  --color-canvas: #f4f6fb;
-  --color-canvas-strong: #e9edf5;
-  --color-surface: rgba(255, 255, 255, 0.88);
-  --color-surface-strong: #ffffff;
-  --color-surface-muted: #e8edf5;
-  --color-surface-elevated: rgba(255, 255, 255, 0.94);
-  --color-border: rgba(15, 23, 42, 0.12);
-  --color-border-strong: rgba(15, 23, 42, 0.2);
-  --color-text: #121722;
-  --color-text-muted: #586174;
-  --color-text-soft: #727c91;
-  --color-accent: #c01639;
-  --color-accent-strong: #99112d;
-  --color-accent-soft: rgba(192, 22, 57, 0.12);
-  --color-accent-mid: rgba(192, 22, 57, 0.24);
-  --color-success: #087a59;
-  --color-success-soft: rgba(8, 122, 89, 0.14);
-  --color-warning: #ab6b12;
-  --color-warning-soft: rgba(171, 107, 18, 0.14);
-  --color-danger: #c53f57;
-  --color-danger-soft: rgba(197, 63, 87, 0.16);
-  --color-focus-ring: rgba(192, 22, 57, 0.28);
-  --color-selection: rgba(192, 22, 57, 0.18);
-  --color-avatar-neutral: #f6d9c8;
-  --surface-overlay-strong: rgba(255, 255, 255, 0.92);
-  --surface-overlay-soft: rgba(255, 255, 255, 0.8);
-  --app-backdrop:
-    radial-gradient(circle at top left, rgba(192, 22, 57, 0.12) 0%, transparent 34%),
-    radial-gradient(circle at top right, rgba(15, 23, 42, 0.06) 0%, transparent 28%),
-    linear-gradient(180deg, #f8f9fc 0%, #f1f4f9 48%, #edf1f8 100%);
+  --theme-canvas: var(--theme-light-canvas);
+  --theme-surface: var(--theme-light-surface);
+  --theme-card: var(--theme-light-card);
+  --theme-text: var(--theme-light-text);
+  --theme-muted-text: var(--theme-light-mutedText);
+  --theme-accent: var(--theme-light-accent);
+  --theme-success: var(--theme-light-success);
+  --theme-warning: var(--theme-light-warning);
+  --theme-danger: var(--theme-light-danger);
+  --theme-contrast-anchor: #0F172A;
+  --theme-shadow-ink: #0F172A;
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+.theme-preview-root[data-theme="dark"] {
   color-scheme: dark;
 
-  --color-canvas: #0c0d10;
-  --color-canvas-strong: #090a0d;
-  --color-surface: #111318;
-  --color-surface-strong: #1c1f27;
-  --color-surface-muted: #181b21;
-  --color-surface-elevated: rgba(17, 19, 24, 0.94);
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-border-strong: rgba(255, 255, 255, 0.12);
-  --color-text: #f2f4fa;
-  --color-text-muted: #b0b5d0;
-  --color-text-soft: #8a90b0;
-  --color-accent: #d4002a;
-  --color-accent-strong: #b8001f;
-  --color-accent-soft: rgba(212, 0, 42, 0.12);
-  --color-accent-mid: rgba(212, 0, 42, 0.24);
-  --color-success: #00be82;
-  --color-success-soft: rgba(0, 190, 130, 0.18);
-  --color-warning: #f0b44d;
-  --color-warning-soft: rgba(240, 180, 77, 0.18);
-  --color-danger: #ff5a72;
-  --color-danger-soft: rgba(255, 90, 114, 0.2);
-  --color-focus-ring: rgba(212, 0, 42, 0.28);
-  --color-selection: rgba(212, 0, 42, 0.22);
-  --color-avatar-neutral: #ffd7bb;
-  --surface-overlay-strong: rgba(17, 19, 24, 0.96);
-  --surface-overlay-soft: rgba(17, 19, 24, 0.8);
-  --app-backdrop:
-    radial-gradient(ellipse 55% 42% at 10% 15%, rgba(212, 0, 42, 0.14) 0%, transparent 100%),
-    linear-gradient(160deg, #0c0d10 0%, #090a0d 55%, #111318 100%);
+  --theme-canvas: var(--theme-dark-canvas);
+  --theme-surface: var(--theme-dark-surface);
+  --theme-card: var(--theme-dark-card);
+  --theme-text: var(--theme-dark-text);
+  --theme-muted-text: var(--theme-dark-mutedText);
+  --theme-accent: var(--theme-dark-accent);
+  --theme-success: var(--theme-dark-success);
+  --theme-warning: var(--theme-dark-warning);
+  --theme-danger: var(--theme-dark-danger);
+  --theme-contrast-anchor: #F8FAFF;
+  --theme-shadow-ink: #040507;
 }
 
-:root {
+:root,
+.theme-preview-root {
+  --color-canvas: var(--theme-canvas);
+  --color-canvas-strong: color-mix(in srgb, var(--theme-canvas) 84%, var(--theme-card));
+  --color-surface: color-mix(in srgb, var(--theme-surface) 88%, transparent);
+  --color-surface-strong: var(--theme-card);
+  --color-surface-muted: color-mix(in srgb, var(--theme-surface) 74%, var(--theme-canvas));
+  --color-surface-elevated: color-mix(in srgb, var(--theme-card) 94%, transparent);
+  --color-border: color-mix(in srgb, var(--theme-text) 13%, var(--theme-canvas));
+  --color-border-strong: color-mix(in srgb, var(--theme-text) 22%, var(--theme-canvas));
+  --color-text: var(--theme-text);
+  --color-text-muted: var(--theme-muted-text);
+  --color-text-soft: color-mix(in srgb, var(--theme-muted-text) 82%, var(--theme-canvas));
+  --color-accent: var(--theme-accent);
+  --color-accent-strong: color-mix(in srgb, var(--theme-accent) 84%, var(--theme-contrast-anchor));
+  --color-accent-soft: color-mix(in srgb, var(--theme-accent) 13%, transparent);
+  --color-accent-mid: color-mix(in srgb, var(--theme-accent) 24%, transparent);
+  --color-success: var(--theme-success);
+  --color-success-soft: color-mix(in srgb, var(--theme-success) 16%, transparent);
+  --color-warning: var(--theme-warning);
+  --color-warning-soft: color-mix(in srgb, var(--theme-warning) 16%, transparent);
+  --color-danger: var(--theme-danger);
+  --color-danger-soft: color-mix(in srgb, var(--theme-danger) 18%, transparent);
+  --color-focus-ring: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+  --color-selection: color-mix(in srgb, var(--theme-accent) 22%, transparent);
+  --color-avatar-neutral: color-mix(in srgb, var(--theme-warning) 30%, var(--theme-canvas));
+  --color-info: color-mix(in srgb, var(--theme-muted-text) 72%, var(--theme-text));
+  --color-info-soft: color-mix(in srgb, var(--color-info) 16%, transparent);
+  --color-neutral-soft: color-mix(in srgb, var(--theme-muted-text) 18%, transparent);
+  --color-neutral-strong: color-mix(in srgb, var(--theme-muted-text) 68%, var(--theme-text));
+  --color-on-accent: #FFFFFF;
+  --surface-overlay-strong: color-mix(in srgb, var(--theme-card) 92%, transparent);
+  --surface-overlay-soft: color-mix(in srgb, var(--theme-surface) 82%, transparent);
+  --app-backdrop:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--theme-accent) 14%, transparent) 0%, transparent 34%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--theme-muted-text) 10%, transparent) 0%, transparent 28%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--theme-canvas) 72%, var(--theme-surface)) 0%,
+      color-mix(in srgb, var(--theme-canvas) 58%, var(--theme-card)) 52%,
+      color-mix(in srgb, var(--theme-canvas) 42%, var(--theme-card)) 100%
+    );
+
   --bg: var(--color-canvas);
   --bg2: var(--color-surface);
   --bg3: var(--color-surface-muted);
@@ -118,6 +167,15 @@
   --muted: var(--color-text-soft);
   --muted2: var(--color-text-muted);
   --success: var(--color-success);
+  --success-soft: var(--color-success-soft);
+  --warning: var(--color-warning);
+  --warning-soft: var(--color-warning-soft);
+  --danger: var(--color-danger);
+  --danger-soft: var(--color-danger-soft);
+  --info: var(--color-info);
+  --info-soft: var(--color-info-soft);
+  --neutral-soft: var(--color-neutral-soft);
+  --neutral-strong: var(--color-neutral-strong);
 
   --color-bg: var(--bg);
   --color-bg-secondary: var(--bg2);

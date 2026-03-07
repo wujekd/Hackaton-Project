@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import type { User } from "firebase/auth";
 import { MemoryRouter } from "react-router-dom";
@@ -18,6 +18,23 @@ vi.mock("../services/event.service", () => ({
   },
 }));
 
+const CUSTOM_THEME = {
+  id: "ocean-lab",
+  name: "Ocean Lab",
+  baseTheme: "light" as const,
+  palette: {
+    canvas: "#112233",
+    surface: "#223344",
+    card: "#334455",
+    text: "#F7F8FA",
+    mutedText: "#CAD2E0",
+    accent: "#FF4477",
+    success: "#00C389",
+    warning: "#E6AC00",
+    danger: "#FF667A",
+  },
+};
+
 describe("MyAccount theme settings", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -29,6 +46,8 @@ describe("MyAccount theme settings", () => {
         hydrated: true,
         preference: "system",
         resolvedTheme: "light",
+        customThemes: [CUSTOM_THEME],
+        activeCustomThemeId: null,
       });
 
       useAuthStore.setState((state) => ({
@@ -39,10 +58,12 @@ describe("MyAccount theme settings", () => {
           email: "alex@example.com",
           username: "Alex",
           themePreference: "system",
+          customThemes: [CUSTOM_THEME],
           createdAt: {} as never,
         },
         loading: false,
-        updateThemePreference: vi.fn().mockResolvedValue(undefined),
+        updateThemeSelection: vi.fn().mockResolvedValue(undefined),
+        updateCustomThemes: vi.fn().mockResolvedValue(undefined),
       }));
     });
   });
@@ -65,11 +86,36 @@ describe("MyAccount theme settings", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+    await waitFor(() => {
+      expect(screen.queryByText("Loading your data...")).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    const themeToggleGroup = await screen.findByRole("group", { name: "Theme preference preference" });
+
+    fireEvent.click(within(themeToggleGroup).getByRole("button", { name: "Dark" }));
 
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe("dark");
       expect(window.localStorage.getItem("mdx-theme-preference")).toBe("dark");
     });
+  });
+
+  it("renders saved custom themes next to the built-in theme buttons", async () => {
+    render(
+      <MemoryRouter>
+        <MyAccount />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Loading your data...")).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+
+    const themeToggleGroup = await screen.findByRole("group", { name: "Theme preference preference" });
+    expect(within(themeToggleGroup).getByRole("button", { name: "Ocean Lab" })).toBeInTheDocument();
+    expect(await screen.findByLabelText("Theme name")).toBeInTheDocument();
   });
 });

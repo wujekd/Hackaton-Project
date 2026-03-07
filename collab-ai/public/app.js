@@ -11,8 +11,9 @@
 
   const syncThemeButtons = () => {
     const activePreference = window.MDXTheme?.getPreference?.() || "system";
+    const activeCustomThemeId = window.MDXTheme?.getActiveCustomThemeId?.() || null;
     themeButtons.forEach((button) => {
-      const isActive = button.dataset.themeOption === activePreference;
+      const isActive = !activeCustomThemeId && button.dataset.themeOption === activePreference;
       button.classList.toggle("is-active", isActive);
       button.setAttribute("aria-pressed", isActive ? "true" : "false");
     });
