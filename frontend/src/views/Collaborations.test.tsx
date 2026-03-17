@@ -16,7 +16,7 @@ vi.mock("../services/collaboration.service", () => ({
   },
 }));
 
-describe("Collaborations search", () => {
+describe("Collaborations", () => {
   beforeEach(() => {
     act(() => {
       useAuthStore.setState((state) => ({
@@ -72,7 +72,7 @@ describe("Collaborations search", () => {
     vi.clearAllMocks();
   });
 
-  it("filters loaded collaborations locally when typing a search", async () => {
+  it("filters loaded collaborations by the selected topic", async () => {
     render(
       <MemoryRouter>
         <Collaborations />
@@ -85,13 +85,11 @@ describe("Collaborations search", () => {
 
     expect(screen.getAllByTestId("collab-item")).toHaveLength(2);
 
-    fireEvent.change(screen.getByRole("textbox", { name: "Search collaborations" }), {
-      target: { value: "music" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Music" }));
 
-    expect(await screen.findByText("1 match")).toBeInTheDocument();
     expect(screen.getAllByText("Music Producer Needed").length).toBeGreaterThan(0);
     expect(screen.getAllByTestId("collab-item")).toHaveLength(1);
+    expect(screen.getByTestId("collab-item")).toHaveTextContent("Music Producer Needed");
     expect(CollaborationService.getAll).toHaveBeenCalledTimes(1);
   });
 });

@@ -155,7 +155,7 @@ export default function Layout() {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
-  const { user, profile, signOut, loading } = useAuthStore();
+  const { user, profile, signOut, loading, isEmailVerified, canAccessVerifiedFeatures } = useAuthStore();
   const unreadTotal = useMessagingStore((state) => state.unreadTotal);
   const listenConversations = useMessagingStore((state) => state.listenConversations);
   const stopMessaging = useMessagingStore((state) => state.stopAll);
@@ -182,17 +182,20 @@ export default function Layout() {
   }, [isMobile, isMoreOpen]);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !canAccessVerifiedFeatures) {
       stopMessaging();
       return;
     }
 
     listenConversations(user.uid);
-  }, [listenConversations, stopMessaging, user]);
+  }, [canAccessVerifiedFeatures, listenConversations, stopMessaging, user]);
 
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
   const initials = displayName.trim().slice(0, 2).toUpperCase() || "G";
-  const role = profile?.admin ? "Admin" : user ? "Student Member" : "Guest";
+  const role =
+    profile?.admin ? "Admin" :
+    user ? (isEmailVerified ? "Student Member" : "Pending verification") :
+    "Guest";
   const unreadBadge = unreadTotal > 99 ? "99+" : unreadTotal > 0 ? String(unreadTotal) : undefined;
   const moreActive =
     location.pathname.startsWith("/schedule") ||
@@ -222,6 +225,10 @@ export default function Layout() {
 
   const handleOpenFeedback = () => {
     setFeedbackNotice(null);
+    if (!canAccessVerifiedFeatures) {
+      setFeedbackNotice("Verify your email before sending feedback.");
+      return;
+    }
     setIsFeedbackOpen(true);
   };
 
@@ -453,7 +460,11 @@ export default function Layout() {
         initialSubject={currentFeedbackSubject}
         subjectOptions={feedbackSubjects}
         routePath={location.pathname}
-        user={user ? { uid: user.uid, name: displayName, email: user.email ?? undefined } : null}
+        user={
+          user && canAccessVerifiedFeatures ?
+            { uid: user.uid, name: displayName, email: user.email ?? undefined } :
+            null
+        }
         onClose={() => setIsFeedbackOpen(false)}
         onSubmitted={(notice) => {
           setFeedbackNotice(notice);

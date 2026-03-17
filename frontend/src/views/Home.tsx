@@ -140,54 +140,56 @@ export default function Home() {
             Recent Collabs
           </div>
 
-          {collabLoading && <div className="empty-state">Loading collaborations...</div>}
-          {collabError && <div className="auth-error">{collabError}</div>}
+          <div className="home-feed-list">
+            {collabLoading && <div className="empty-state">Loading collaborations...</div>}
+            {collabError && <div className="auth-error">{collabError}</div>}
 
-          {!collabLoading && !collabError && collabs.length === 0 && (
-            <div className="empty-state">No collaborations yet. Post the first one.</div>
-          )}
+            {!collabLoading && !collabError && collabs.length === 0 && (
+              <div className="empty-state">No collaborations yet. Post the first one.</div>
+            )}
 
-          {collabs.map((collab) => (
-            <CollabListItem
-              key={collab.id}
-              collab={collab}
-              clickable
-              ariaLabel={`Open collaboration ${collab.title}`}
-              onOpen={() => navigate(`/collaborations/${collab.id}`)}
-              meta={`Created ${formatDateShort(collab.createdAt)}`}
-              topRight={collab.tags.length > 0 ? <div className="tags"><span className="tag">{collab.tags[0]}</span></div> : undefined}
-              roles={
-                <div className="roles">
-                  <div className="role-chip">
-                    <span className="dot-o" />
-                    Open to collaborators
-                  </div>
-                  {collab.files.length > 0 && (
+            {collabs.map((collab) => (
+              <CollabListItem
+                key={collab.id}
+                collab={collab}
+                clickable
+                ariaLabel={`Open collaboration ${collab.title}`}
+                onOpen={() => navigate(`/collaborations/${collab.id}`)}
+                meta={`Created ${formatDateShort(collab.createdAt)}`}
+                topRight={collab.tags.length > 0 ? <div className="tags"><span className="tag">{collab.tags[0]}</span></div> : undefined}
+                roles={
+                  <div className="roles">
                     <div className="role-chip">
-                      <span className="dot-f" />
-                      {collab.files.length} file{collab.files.length === 1 ? "" : "s"} attached
+                      <span className="dot-o" />
+                      Open to collaborators
                     </div>
-                  )}
-                </div>
-              }
-              footerTags={collab.tags.slice(0, 4)}
-              actions={
-                <div className="collab-actions">
-                  <Link className="btn-sm accent" to={`/collaborations/${collab.id}`}>
-                    Open
-                  </Link>
-                  {user?.uid !== collab.authorId && (
-                    <Link
-                      className="btn-sm outline"
-                      to={buildDirectMessageHref(user?.uid, collab.authorId, { username: collab.authorName })}
-                    >
-                      Message Host
+                    {collab.files.length > 0 && (
+                      <div className="role-chip">
+                        <span className="dot-f" />
+                        {collab.files.length} file{collab.files.length === 1 ? "" : "s"} attached
+                      </div>
+                    )}
+                  </div>
+                }
+                footerTags={collab.tags.slice(0, 4)}
+                actions={
+                  <div className="collab-actions">
+                    <Link className="btn-sm accent" to={`/collaborations/${collab.id}`}>
+                      Open
                     </Link>
-                  )}
-                </div>
-              }
-            />
-          ))}
+                    {user?.uid !== collab.authorId && (
+                      <Link
+                        className="btn-sm outline"
+                        to={buildDirectMessageHref(user?.uid, collab.authorId, { username: collab.authorName })}
+                      >
+                        Message Host
+                      </Link>
+                    )}
+                  </div>
+                }
+              />
+            ))}
+          </div>
         </section>
 
         <aside className="home-aside">

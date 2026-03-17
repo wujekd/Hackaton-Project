@@ -27,6 +27,7 @@ function idInitials(value: string): string {
 export default function CollaborationDetail() {
   const { collaborationId } = useParams();
   const user = useAuthStore((state) => state.user);
+  const canAccessVerifiedFeatures = useAuthStore((state) => state.canAccessVerifiedFeatures);
   const [collaboration, setCollaboration] = useState<Collaboration | null>(null);
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -277,12 +278,27 @@ export default function CollaborationDetail() {
                 <aside className="detail-card">
                   <h2 className="detail-card-title">Contact</h2>
                   <div className="detail-actions">
-                    <Link
-                      className="btn-sm accent collab-message-author-cta"
-                      to={buildDirectMessageHref(user?.uid, collaboration.authorId, { username: collaboration.authorName })}
-                    >
-                      Message Project Author
-                    </Link>
+                    {user ? (
+                      canAccessVerifiedFeatures ? (
+                        <Link
+                          className="btn-sm accent collab-message-author-cta"
+                          to={buildDirectMessageHref(user.uid, collaboration.authorId, { username: collaboration.authorName })}
+                        >
+                          Message Project Author
+                        </Link>
+                      ) : (
+                        <Link
+                          className="btn-sm accent collab-message-author-cta"
+                          to={`/verify-email?redirect=${encodeURIComponent(`/collaborations/${collaboration.id}`)}`}
+                        >
+                          Verify email to message
+                        </Link>
+                      )
+                    ) : (
+                      <Link className="btn-sm accent collab-message-author-cta" to={`/login?redirect=${encodeURIComponent(`/collaborations/${collaboration.id}`)}`}>
+                        Sign in to message
+                      </Link>
+                    )}
                   </div>
                 </aside>
               )}

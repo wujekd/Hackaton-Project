@@ -5,7 +5,12 @@ import {
   Timestamp,
 } from "firebase-admin/firestore";
 import {setGlobalOptions} from "firebase-functions/v2";
-import {HttpsError, onCall, onRequest} from "firebase-functions/v2/https";
+import {
+  CallableRequest,
+  HttpsError,
+  onCall,
+  onRequest,
+} from "firebase-functions/v2/https";
 
 setGlobalOptions({maxInstances: 10});
 
@@ -217,6 +222,21 @@ const asBoolean = (value: unknown, field: string): boolean => {
 };
 
 const normalizeEmail = (value: string): string => value.trim().toLowerCase();
+
+const assertVerifiedAuth = (request: CallableRequest<unknown>): string => {
+  const auth = request.auth;
+  const uid = auth?.uid;
+  if (!uid || !auth) {
+    throw new HttpsError("unauthenticated", "Authentication required.");
+  }
+  if (auth.token.email_verified !== true) {
+    throw new HttpsError(
+      "permission-denied",
+      "Verify your email before using this feature.",
+    );
+  }
+  return uid;
+};
 
 const buildDirectConversationId = (uidA: string, uidB: string): string => {
   const sorted = [uidA, uidB].sort();
@@ -469,10 +489,7 @@ export const createPoll = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
   await assertAdmin(uid);
 
   const data = request.data as CreatePollPayload;
@@ -511,10 +528,7 @@ export const listPolls = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
   await assertAdmin(uid);
 
   const snapshot = await db
@@ -551,10 +565,7 @@ export const listFeedback = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
   await assertAdmin(uid);
 
   const snapshot = await db
@@ -589,10 +600,7 @@ export const submitFeedback = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
 
   const data = request.data as SubmitFeedbackPayload;
   const subject = asNonEmptyString(data.subject, "subject", 80);
@@ -624,10 +632,7 @@ export const updateFeedbackStatus = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
   await assertAdmin(uid);
 
   const data = request.data as UpdateFeedbackStatusPayload;
@@ -654,10 +659,7 @@ export const deleteFeedback = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
   await assertAdmin(uid);
 
   const data = request.data as DeleteFeedbackPayload;
@@ -679,10 +681,7 @@ export const publishPoll = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
   await assertAdmin(uid);
 
   const data = request.data as PublishPollPayload;
@@ -751,10 +750,7 @@ export const closePoll = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
   await assertAdmin(uid);
 
   const data = request.data as ClosePollPayload;
@@ -825,10 +821,7 @@ export const castPollVote = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
 
   const data = request.data as CastPollVotePayload;
   const pollId = asNonEmptyString(data.pollId, "pollId", 180);
@@ -980,10 +973,7 @@ export const sendMessage = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const senderId = request.auth?.uid;
-  if (!senderId) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const senderId = assertVerifiedAuth(request);
 
   const data = request.data as SendMessagePayload;
   const conversationId = asNonEmptyString(
@@ -1052,10 +1042,7 @@ export const getOrCreateDirectConversation = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
 
   const data = request.data as GetOrCreateDirectConversationPayload;
   const otherUserId = asNonEmptyString(data.otherUserId, "otherUserId", 180);
@@ -1176,10 +1163,7 @@ export const markConversationRead = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
 
   const data = request.data as MarkReadPayload;
   const conversationId = asNonEmptyString(
@@ -1218,10 +1202,7 @@ export const deleteEvent = onCall({
   cors: true,
   invoker: "public",
 }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Authentication required.");
-  }
+  const uid = assertVerifiedAuth(request);
   await assertAdmin(uid);
 
   const data = request.data as DeleteEventPayload;

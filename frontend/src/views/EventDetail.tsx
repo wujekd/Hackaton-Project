@@ -17,7 +17,7 @@ function eventType(event: EventItem): string {
 
 export default function EventDetail() {
   const { eventId } = useParams();
-  const { user } = useAuthStore();
+  const { user, canAccessVerifiedFeatures } = useAuthStore();
   const [event, setEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +49,10 @@ export default function EventDetail() {
   }, [user, eventId]);
 
   const handleSignUpToggle = async () => {
-    if (!user || !event) return;
+    if (!user || !event || !canAccessVerifiedFeatures) {
+      setError("Verify your email before signing up for events.");
+      return;
+    }
     setSignupLoading(true);
     try {
       if (signedUp) {
@@ -115,14 +118,20 @@ export default function EventDetail() {
               <h2 className="detail-card-title">Actions</h2>
               <div className="detail-actions">
                 {user ? (
-                  <button
-                    className={`btn-sm ${signedUp ? "outline" : "accent"}`}
-                    type="button"
-                    disabled={signupLoading}
-                    onClick={handleSignUpToggle}
-                  >
-                    {signupLoading ? "..." : signedUp ? "Cancel Sign Up" : "Sign Up"}
-                  </button>
+                  canAccessVerifiedFeatures ? (
+                    <button
+                      className={`btn-sm ${signedUp ? "outline" : "accent"}`}
+                      type="button"
+                      disabled={signupLoading}
+                      onClick={handleSignUpToggle}
+                    >
+                      {signupLoading ? "..." : signedUp ? "Cancel Sign Up" : "Sign Up"}
+                    </button>
+                  ) : (
+                    <Link className="btn-sm accent" to={`/verify-email?redirect=${encodeURIComponent(`/events/${event.id}`)}`}>
+                      Verify email to sign up
+                    </Link>
+                  )
                 ) : (
                   <Link className="btn-sm accent" to="/login">Sign in to sign up</Link>
                 )}

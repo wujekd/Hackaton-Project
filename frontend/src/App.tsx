@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./components/Layout";
+import RequireVerifiedEmail from "./components/RequireVerifiedEmail";
 import RouteError from "./components/RouteError";
 import Home from "./views/Home";
 import Auth from "./views/Auth";
@@ -17,6 +18,7 @@ import Moderation from "./views/Moderation";
 import MyAccount from "./views/MyAccount";
 import Appearance from "./views/Appearance";
 import NotFound from "./views/NotFound";
+import VerifyEmail from "./views/VerifyEmail";
 import { useAuthStore } from "./stores/auth.store";
 import { useThemeStore } from "./stores/theme.store";
 import type { RouteHandle } from "./types/route";
@@ -39,14 +41,49 @@ const router = createBrowserRouter([
         handle: { title: "Collabs", breadcrumb: "Collabs" } satisfies RouteHandle,
       },
       {
-        path: "collaborations/new",
-        element: <CreateCollaboration />,
-        handle: { title: "New Collaboration", breadcrumb: "New Collaboration" } satisfies RouteHandle,
-      },
-      {
-        path: "collaborations/:collaborationId/edit",
-        element: <CreateCollaboration />,
-        handle: { title: "Edit Collaboration", breadcrumb: "Edit Collaboration" } satisfies RouteHandle,
+        element: <RequireVerifiedEmail />,
+        children: [
+          {
+            path: "collaborations/new",
+            element: <CreateCollaboration />,
+            handle: { title: "New Collaboration", breadcrumb: "New Collaboration" } satisfies RouteHandle,
+          },
+          {
+            path: "collaborations/:collaborationId/edit",
+            element: <CreateCollaboration />,
+            handle: { title: "Edit Collaboration", breadcrumb: "Edit Collaboration" } satisfies RouteHandle,
+          },
+          {
+            path: "schedule",
+            element: <Schedule />,
+            handle: { title: "Schedule", breadcrumb: "Schedule" } satisfies RouteHandle,
+          },
+          {
+            path: "events/suggest",
+            element: <SuggestEvent />,
+            handle: { title: "Suggest Event", breadcrumb: "Suggest Event" } satisfies RouteHandle,
+          },
+          {
+            path: "messages",
+            element: <Messages />,
+            handle: { title: "Messages", breadcrumb: "Messages" } satisfies RouteHandle,
+          },
+          {
+            path: "messages/:conversationId",
+            element: <Messages />,
+            handle: { title: "Messages", breadcrumb: "Messages" } satisfies RouteHandle,
+          },
+          {
+            path: "admin/moderation",
+            element: <Moderation />,
+            handle: { title: "Moderation", breadcrumb: "Moderation" } satisfies RouteHandle,
+          },
+          {
+            path: "events/:eventId/edit",
+            element: <EditEvent />,
+            handle: { title: "Edit Event", breadcrumb: "Edit Event" } satisfies RouteHandle,
+          },
+        ],
       },
       {
         path: "collaborations/:collaborationId",
@@ -59,39 +96,9 @@ const router = createBrowserRouter([
         handle: { title: "Events", breadcrumb: "Events" } satisfies RouteHandle,
       },
       {
-        path: "schedule",
-        element: <Schedule />,
-        handle: { title: "Schedule", breadcrumb: "Schedule" } satisfies RouteHandle,
-      },
-      {
-        path: "events/suggest",
-        element: <SuggestEvent />,
-        handle: { title: "Suggest Event", breadcrumb: "Suggest Event" } satisfies RouteHandle,
-      },
-      {
         path: "events/:eventId",
         element: <EventDetail />,
         handle: { title: "Event Detail", breadcrumb: "Event Detail" } satisfies RouteHandle,
-      },
-      {
-        path: "events/:eventId/edit",
-        element: <EditEvent />,
-        handle: { title: "Edit Event", breadcrumb: "Edit Event" } satisfies RouteHandle,
-      },
-      {
-        path: "messages",
-        element: <Messages />,
-        handle: { title: "Messages", breadcrumb: "Messages" } satisfies RouteHandle,
-      },
-      {
-        path: "messages/:conversationId",
-        element: <Messages />,
-        handle: { title: "Messages", breadcrumb: "Messages" } satisfies RouteHandle,
-      },
-      {
-        path: "admin/moderation",
-        element: <Moderation />,
-        handle: { title: "Moderation", breadcrumb: "Moderation" } satisfies RouteHandle,
       },
       {
         path: "account",
@@ -107,6 +114,11 @@ const router = createBrowserRouter([
         path: "login",
         element: <Auth />,
         handle: { title: "Login", breadcrumb: "Login" } satisfies RouteHandle,
+      },
+      {
+        path: "verify-email",
+        element: <VerifyEmail />,
+        handle: { title: "Verify Email", breadcrumb: "Verify Email" } satisfies RouteHandle,
       },
       {
         path: "internal/theme",

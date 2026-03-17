@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../stores/auth.store";
 import type { AuthMode } from "../types/auth";
+import { resolveRedirectTarget } from "../utils/auth";
 
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("login");
@@ -12,10 +13,19 @@ export default function Auth() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { signIn, signUp, signInWithGoogle, user } = useAuthStore();
+  const [searchParams] = useSearchParams();
+  const redirectTarget = resolveRedirectTarget(searchParams.get("redirect"), "/");
+  const { signIn, signUp, signInWithGoogle, user, isEmailVerified } = useAuthStore();
   const navigate = useNavigate();
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) {
+    return (
+      <Navigate
+        to={isEmailVerified ? redirectTarget : `/verify-email?redirect=${encodeURIComponent(redirectTarget)}`}
+        replace
+      />
+    );
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -28,12 +38,21 @@ export default function Auth() {
 
     setLoading(true);
     try {
+      const result =
+        mode === "login" ?
+          await signIn(email, password) :
+          await signUp(email, password, username);
       if (mode === "login") {
-        await signIn(email, password);
-      } else {
-        await signUp(email, password, username);
+        navigate(
+          result.emailVerified ? redirectTarget : `/verify-email?redirect=${encodeURIComponent(redirectTarget)}`,
+          { replace: true },
+        );
+        return;
       }
-      navigate("/");
+      navigate(
+        result.emailVerified ? redirectTarget : `/verify-email?redirect=${encodeURIComponent(redirectTarget)}`,
+        { replace: true },
+      );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {
@@ -45,8 +64,11 @@ export default function Auth() {
     setError("");
     setLoading(true);
     try {
-      await signInWithGoogle();
-      navigate("/");
+      const result = await signInWithGoogle();
+      navigate(
+        result.emailVerified ? redirectTarget : `/verify-email?redirect=${encodeURIComponent(redirectTarget)}`,
+        { replace: true },
+      );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
     } finally {

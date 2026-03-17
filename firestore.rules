@@ -6,18 +6,22 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function verifiedEmail() {
+      return signedIn() && request.auth.token.email_verified == true;
+    }
+
     function isAdmin() {
-      return signedIn() &&
+      return verifiedEmail() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true;
     }
 
     function isConversationParticipant() {
-      return signedIn() && request.auth.uid in resource.data.participantIds;
+      return verifiedEmail() && request.auth.uid in resource.data.participantIds;
     }
 
     function isConversationParticipantById(conversationId) {
-      return signedIn() &&
+      return verifiedEmail() &&
         exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
         request.auth.uid in
           get(/databases/$(database)/documents/conversations/$(conversationId))
@@ -41,22 +45,24 @@ service cloud.firestore {
       allow delete: if false;
 
       match /timetable/{entryId} {
-        allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update, delete: if verifiedEmail() && request.auth.uid == userId;
       }
 
       match /eventSignups/{eventId} {
-        allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update, delete: if verifiedEmail() && request.auth.uid == userId;
       }
     }
 
     match /collaborations/{collaborationId} {
       allow read: if true;
-      allow create: if signedIn() &&
+      allow create: if verifiedEmail() &&
         request.resource.data.authorId == request.auth.uid &&
         request.resource.data.title is string &&
         request.resource.data.description is string &&
         request.resource.data.tags is list;
-      allow update, delete: if signedIn() &&
+      allow update, delete: if verifiedEmail() &&
         (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
@@ -68,7 +74,7 @@ service cloud.firestore {
     match /eventProposals/{proposalId} {
       allow read: if signedIn() &&
         (resource.data.authorId == request.auth.uid || isAdmin());
-      allow create: if signedIn() &&
+      allow create: if verifiedEmail() &&
         request.resource.data.authorId == request.auth.uid &&
         request.resource.data.name is string &&
         request.resource.data.status == "pending";
@@ -88,7 +94,7 @@ service cloud.firestore {
       allow create, update, delete: if false;
 
       match /votes/{voteId} {
-        allow read: if isAdmin() || (signedIn() && voteId == request.auth.uid);
+        allow read: if isAdmin() || (verifiedEmail() && voteId == request.auth.uid);
         allow create, update, delete: if false;
       }
     }

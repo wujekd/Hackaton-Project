@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { User } from "firebase/auth";
-import type { UserProfile } from "../types/auth";
+import type { AuthResult, UserProfile } from "../types/auth";
 import { AuthService } from "../services/auth.service";
 import { useThemeStore } from "./theme.store";
 import type { CustomTheme, ThemePreference } from "../types/theme";
@@ -9,11 +9,15 @@ interface AuthState {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
+  isEmailVerified: boolean;
+  canAccessVerifiedFeatures: boolean;
   init: () => () => void;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, username?: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<AuthResult>;
+  signUp: (email: string, password: string, username?: string) => Promise<AuthResult>;
+  signInWithGoogle: () => Promise<AuthResult>;
   signOut: () => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
+  refreshVerificationStatus: () => Promise<boolean>;
   updateProfileInterests: (interests: string[]) => Promise<void>;
   updateProfileDescription: (description: string) => Promise<void>;
   updateProfileNickname: (nickname: string) => Promise<void>;
@@ -25,15 +29,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
   loading: true,
+  isEmailVerified: false,
+  canAccessVerifiedFeatures: false,
 
   init: () => {
     const unsub = AuthService.onAuthStateChanged(async (user) => {
       if (user) {
         const profile = await AuthService.ensureUserProfile(user);
-        set({ user, profile, loading: false });
+        set({
+          user,
+          profile,
+          loading: false,
+          isEmailVerified: user.emailVerified,
+          canAccessVerifiedFeatures: user.emailVerified,
+        });
       } else {
         const hadAuthenticatedSession = get().user !== null || get().profile !== null;
-        set({ user: null, profile: null, loading: false });
+        set({
+          user: null,
+          profile: null,
+          loading: false,
+          isEmailVerified: false,
+          canAccessVerifiedFeatures: false,
+        });
         if (hadAuthenticatedSession) {
           useThemeStore.getState().resetToGuestDefault();
         }
@@ -43,20 +61,58 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signIn: async (email, password) => {
-    await AuthService.signIn(email, password);
+    return AuthService.signIn(email, password);
   },
 
   signUp: async (email, password, username) => {
-    await AuthService.signUp(email, password, username);
+    return AuthService.signUp(email, password, username);
   },
 
   signInWithGoogle: async () => {
-    await AuthService.signInWithGoogle();
+    return AuthService.signInWithGoogle();
   },
 
   signOut: async () => {
     await AuthService.signOut();
     useThemeStore.getState().resetToGuestDefault();
+    set({
+      user: null,
+      profile: null,
+      isEmailVerified: false,
+      canAccessVerifiedFeatures: false,
+    });
+  },
+
+  resendVerificationEmail: async () => {
+    const { user } = get();
+    if (!user) {
+      throw new Error("You must be signed in to verify your email.");
+    }
+
+    await AuthService.resendEmailVerification();
+  },
+
+  refreshVerificationStatus: async () => {
+    const refreshedUser = await AuthService.refreshCurrentUser();
+    if (!refreshedUser) {
+      set({
+        user: null,
+        profile: null,
+        isEmailVerified: false,
+        canAccessVerifiedFeatures: false,
+      });
+      useThemeStore.getState().resetToGuestDefault();
+      return false;
+    }
+
+    set((current) => ({
+      user: refreshedUser,
+      profile: current.profile,
+      isEmailVerified: refreshedUser.emailVerified,
+      canAccessVerifiedFeatures: refreshedUser.emailVerified,
+    }));
+
+    return refreshedUser.emailVerified;
   },
 
   updateProfileInterests: async (interests) => {

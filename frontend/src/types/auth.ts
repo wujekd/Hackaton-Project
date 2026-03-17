@@ -15,4 +15,8 @@ export interface UserProfile {
   createdAt: Timestamp;
 }
 
+export interface AuthResult {
+  emailVerified: boolean;
+}
+
 export type AuthMode = "login" | "register";
