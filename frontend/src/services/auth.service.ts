@@ -93,8 +93,6 @@ function getAuthErrorMessage(error: unknown): string {
 
 async function sendVerificationEmailToUser(user: User): Promise<void> {
   try {
-    await user.reload();
-    await user.getIdToken(true);
     await sendEmailVerification(user, {
       url: `${window.location.origin}/verify-email?verified=1`,
     });
@@ -206,6 +204,18 @@ export const AuthService = {
     }
 
     await sendVerificationEmailToUser(auth.currentUser);
+  },
+
+  getVerifiedFeatureAccess: async (
+    user: User,
+    options?: { forceRefresh?: boolean },
+  ): Promise<boolean> => {
+    if (options?.forceRefresh) {
+      await user.reload();
+    }
+
+    const tokenResult = await user.getIdTokenResult(options?.forceRefresh === true);
+    return user.emailVerified === true && tokenResult.claims.email_verified === true;
   },
 
   refreshCurrentUser: async (): Promise<User | null> => {

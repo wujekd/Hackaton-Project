@@ -276,6 +276,13 @@ select {
   padding: 4px;
 }
 
+.sidebar-feedback--verify {
+  border-color: color-mix(in srgb, var(--red) 28%, var(--border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--red) 9%, transparent), transparent 68%),
+    var(--bg2);
+}
+
 .sidebar-feedback__trigger {
   width: 100%;
   border: 0;
@@ -289,6 +296,11 @@ select {
   border-radius: var(--radius-md);
   transition: background 0.15s ease, transform 0.15s ease;
   animation: feedback-pulse 3.5s ease-in-out infinite;
+}
+
+.sidebar-feedback__trigger--static {
+  cursor: default;
+  animation: none;
 }
 
 @keyframes feedback-pulse {
@@ -314,6 +326,12 @@ select {
   outline-offset: 2px;
 }
 
+.sidebar-feedback__trigger--static:hover,
+.sidebar-feedback__trigger--static:focus-visible {
+  background: transparent;
+  transform: none;
+}
+
 .sidebar-feedback__eyebrow {
   font-size: 11px;
   font-weight: 800;
@@ -326,6 +344,35 @@ select {
   font-size: 12px;
   line-height: 1.4;
   color: var(--muted2);
+}
+
+.sidebar-feedback__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin-top: 4px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.sidebar-feedback__cta:hover,
+.sidebar-feedback__cta:focus-visible {
+  background: var(--red-strong, var(--red));
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--red) 30%, transparent);
+}
+
+.sidebar-feedback__cta:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--red) 45%, white);
+  outline-offset: 2px;
 }
 
 .sidebar-feedback .sidebar-feedback__notice {
@@ -351,13 +398,6 @@ select {
 .page-enter {
   animation: page-enter 0.16s ease-out both;
   min-height: 100%;
-}
-
-.page-enter:has(.home-page-view),
-.page-enter:has(.collabs-page-view) {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
 }
 
 /* Allow full-height children like messages to stretch */
@@ -904,6 +944,13 @@ select {
 }
 
 @media (min-width: 1201px) {
+  .page-enter:has(.home-page-view),
+  .page-enter:has(.collabs-page-view) {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .home-page-view {
     height: 100%;
     display: flex;

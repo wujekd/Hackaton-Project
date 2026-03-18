@@ -125,6 +125,10 @@ interface MobileTabItemProps {
   onSelect?: () => void;
 }
 
+function buildRedirectTarget(location: ReturnType<typeof useLocation>): string {
+  return `${location.pathname}${location.search}${location.hash}`;
+}
+
 function MobileTabItem({ to, label, icon, end, onSelect }: MobileTabItemProps) {
   return (
     <NavLink
@@ -211,6 +215,7 @@ export default function Layout() {
     location.pathname.startsWith("/account") ? "My Account" :
     location.pathname.startsWith("/appearance") ? "Appearance" :
     "General Feedback";
+  const verifyEmailHref = `/verify-email?redirect=${encodeURIComponent(buildRedirectTarget(location))}`;
 
   useEffect(() => {
     if (!feedbackNotice) return;
@@ -284,6 +289,20 @@ export default function Layout() {
                   {feedbackNotice}
                 </div>
               )}
+            </div>
+          )}
+
+          {user && !canAccessVerifiedFeatures && (
+            <div className="sidebar-feedback sidebar-feedback--verify theme-surface">
+              <div className="sidebar-feedback__trigger sidebar-feedback__trigger--static">
+                <span className="sidebar-feedback__eyebrow">Verify Your Account</span>
+                <span className="sidebar-feedback__copy">
+                  Confirm your email to unlock collaboration posts, messaging, schedules, and event signups.
+                </span>
+                <NavLink className="sidebar-feedback__cta" to={verifyEmailHref}>
+                  Verify Email Now
+                </NavLink>
+              </div>
             </div>
           )}
 
@@ -397,6 +416,19 @@ export default function Layout() {
                       {feedbackNotice}
                     </div>
                   )}
+                </div>
+              )}
+              {user && !canAccessVerifiedFeatures && (
+                <div className="mobile-feedback-block sidebar-feedback sidebar-feedback--verify">
+                  <div className="sidebar-feedback__trigger sidebar-feedback__trigger--static">
+                    <span className="sidebar-feedback__eyebrow">Verify Your Account</span>
+                    <span className="sidebar-feedback__copy">
+                      Confirm your email to unlock collaboration posts, messaging, schedules, and event signups.
+                    </span>
+                    <NavLink className="sidebar-feedback__cta" to={verifyEmailHref} onClick={() => setIsMoreOpen(false)}>
+                      Verify Email Now
+                    </NavLink>
+                  </div>
                 </div>
               )}
               <div className="mobile-more-theme">

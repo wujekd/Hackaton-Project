@@ -15,6 +15,7 @@ const authServiceMock = vi.hoisted(() => ({
   ensureUserProfile: vi.fn(),
   resendEmailVerification: vi.fn().mockResolvedValue(undefined),
   refreshCurrentUser: vi.fn(),
+  getVerifiedFeatureAccess: vi.fn(),
   getUserProfile: vi.fn(),
   updateInterests: vi.fn(),
   updateDescription: vi.fn(),
@@ -71,6 +72,7 @@ describe("auth store sign out", () => {
     authServiceMock.onAuthStateChanged.mockReset();
     authServiceMock.ensureUserProfile.mockReset();
     authServiceMock.refreshCurrentUser.mockReset();
+    authServiceMock.getVerifiedFeatureAccess.mockReset();
 
     useThemeStore.setState({
       hydrated: false,
@@ -130,6 +132,7 @@ describe("auth store sign out", () => {
       email: "alex@example.com",
       createdAt: {} as never,
     });
+    authServiceMock.getVerifiedFeatureAccess.mockResolvedValue(false);
 
     useAuthStore.getState().init();
 
@@ -161,6 +164,7 @@ describe("auth store sign out", () => {
       email: "alex@example.com",
       emailVerified: true,
     });
+    authServiceMock.getVerifiedFeatureAccess.mockResolvedValue(true);
 
     await act(async () => {
       await expect(useAuthStore.getState().refreshVerificationStatus()).resolves.toBe(true);
@@ -170,5 +174,29 @@ describe("auth store sign out", () => {
     expect(state.isEmailVerified).toBe(true);
     expect(state.canAccessVerifiedFeatures).toBe(true);
     expect(state.user?.emailVerified).toBe(true);
+  });
+
+  it("keeps verified-only access disabled until the token claim is verified", async () => {
+    let listener: ((user: unknown) => Promise<void>) | undefined;
+    authServiceMock.onAuthStateChanged.mockImplementation((cb: (user: unknown) => Promise<void>) => {
+      listener = cb;
+      return vi.fn();
+    });
+    authServiceMock.ensureUserProfile.mockResolvedValue({
+      uid: "user-1",
+      email: "alex@example.com",
+      createdAt: {} as never,
+    });
+    authServiceMock.getVerifiedFeatureAccess.mockResolvedValue(false);
+
+    useAuthStore.getState().init();
+
+    await act(async () => {
+      await listener?.({ uid: "user-1", email: "alex@example.com", emailVerified: true });
+    });
+
+    const state = useAuthStore.getState();
+    expect(state.isEmailVerified).toBe(true);
+    expect(state.canAccessVerifiedFeatures).toBe(false);
   });
 });

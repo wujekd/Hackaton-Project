@@ -59,4 +59,38 @@ describe("VerifyEmail", () => {
     expect(await screen.findByText("Your email is still unverified. Finish the link in your inbox, then try again."))
       .toBeInTheDocument();
   });
+
+  it("does not redirect away when only the user flag is verified but feature access is still blocked", async () => {
+    act(() => {
+      useAuthStore.setState((state) => ({
+        ...state,
+        user: { uid: "user-1", email: "alex@example.com", emailVerified: true } as User,
+        profile: {
+          uid: "user-1",
+          email: "alex@example.com",
+          createdAt: {} as never,
+        },
+        loading: false,
+        isEmailVerified: true,
+        canAccessVerifiedFeatures: false,
+        resendVerificationEmail: async () => undefined,
+        refreshVerificationStatus: async () => false,
+        signOut: async () => undefined,
+      }));
+    });
+
+    const router = createMemoryRouter(
+      [
+        { path: "/verify-email", element: <VerifyEmail /> },
+        { path: "/", element: <div>Home</div> },
+        { path: "/login", element: <div>Login</div> },
+      ],
+      { initialEntries: ["/verify-email"] },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    expect(screen.getByText("Verification pending for alex@example.com")).toBeInTheDocument();
+    expect(screen.queryByText("Home")).not.toBeInTheDocument();
+  });
 });

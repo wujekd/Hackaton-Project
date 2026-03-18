@@ -20,6 +20,7 @@ interface RenderLayoutOptions {
   width?: number;
   admin?: boolean;
   signedIn?: boolean;
+  verified?: boolean;
   unreadTotal?: number;
 }
 
@@ -28,6 +29,7 @@ function renderLayout({
   width = 375,
   admin = false,
   signedIn = true,
+  verified = true,
   unreadTotal = 0,
 }: RenderLayoutOptions = {}) {
   mockViewportWidth(width);
@@ -50,6 +52,8 @@ function renderLayout({
           }
         : null,
       loading: false,
+      isEmailVerified: signedIn && verified,
+      canAccessVerifiedFeatures: signedIn && verified,
       updateThemeSelection: vi.fn().mockResolvedValue(undefined),
       updateCustomThemes: vi.fn().mockResolvedValue(undefined),
     }));
@@ -103,6 +107,8 @@ describe("Layout mobile shell", () => {
         user: null,
         profile: null,
         loading: false,
+        isEmailVerified: false,
+        canAccessVerifiedFeatures: false,
         updateThemeSelection: vi.fn().mockResolvedValue(undefined),
         updateCustomThemes: vi.fn().mockResolvedValue(undefined),
       }));
@@ -163,6 +169,16 @@ describe("Layout mobile shell", () => {
     expect(screen.queryByRole("navigation", { name: "Primary mobile navigation" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Appearance" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Help Us Improve!/i })).toBeInTheDocument();
+  });
+
+  it("shows a stronger verification CTA for unverified users in the sidebar", () => {
+    renderLayout({ width: 1280, verified: false });
+
+    expect(screen.getByText("Verify Your Account")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Verify Email Now" })).toHaveAttribute(
+      "href",
+      "/verify-email?redirect=%2F",
+    );
   });
 
   it("shows unread badge count from messaging store", () => {

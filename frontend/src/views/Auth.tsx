@@ -15,13 +15,15 @@ export default function Auth() {
 
   const [searchParams] = useSearchParams();
   const redirectTarget = resolveRedirectTarget(searchParams.get("redirect"), "/");
-  const { signIn, signUp, signInWithGoogle, user, isEmailVerified } = useAuthStore();
+  const { signIn, signUp, signInWithGoogle, user, canAccessVerifiedFeatures } = useAuthStore();
   const navigate = useNavigate();
 
   if (user) {
     return (
       <Navigate
-        to={isEmailVerified ? redirectTarget : `/verify-email?redirect=${encodeURIComponent(redirectTarget)}`}
+        to={
+          canAccessVerifiedFeatures ? redirectTarget : `/verify-email?redirect=${encodeURIComponent(redirectTarget)}`
+        }
         replace
       />
     );

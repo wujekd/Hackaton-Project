@@ -11,7 +11,7 @@ export default function VerifyEmail() {
   const {
     user,
     loading,
-    isEmailVerified,
+    canAccessVerifiedFeatures,
     resendVerificationEmail,
     refreshVerificationStatus,
     signOut,
@@ -28,7 +28,7 @@ export default function VerifyEmail() {
       !returnedFromVerification ||
       loading ||
       !user ||
-      isEmailVerified ||
+      canAccessVerifiedFeatures ||
       autoRefreshTriggeredRef.current
     ) {
       return;
@@ -70,7 +70,15 @@ export default function VerifyEmail() {
     return () => {
       cancelled = true;
     };
-  }, [isEmailVerified, loading, navigate, redirectTarget, refreshVerificationStatus, returnedFromVerification, user]);
+  }, [
+    canAccessVerifiedFeatures,
+    loading,
+    navigate,
+    redirectTarget,
+    refreshVerificationStatus,
+    returnedFromVerification,
+    user,
+  ]);
 
   if (loading) {
     return (
@@ -86,7 +94,7 @@ export default function VerifyEmail() {
     return <Navigate to={`/login?redirect=${encodeURIComponent(redirectTarget)}`} replace />;
   }
 
-  if (!loading && user && isEmailVerified) {
+  if (!loading && user && canAccessVerifiedFeatures) {
     return <Navigate to={redirectTarget} replace />;
   }
 

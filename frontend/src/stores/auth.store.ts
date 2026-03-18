@@ -33,15 +33,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   canAccessVerifiedFeatures: false,
 
   init: () => {
+    let authSnapshotVersion = 0;
+
     const unsub = AuthService.onAuthStateChanged(async (user) => {
+      const snapshotVersion = ++authSnapshotVersion;
+
       if (user) {
-        const profile = await AuthService.ensureUserProfile(user);
+        const [profile, canAccessVerifiedFeatures] = await Promise.all([
+          AuthService.ensureUserProfile(user),
+          AuthService.getVerifiedFeatureAccess(user),
+        ]);
+
+        if (snapshotVersion !== authSnapshotVersion) {
+          return;
+        }
+
         set({
           user,
           profile,
           loading: false,
           isEmailVerified: user.emailVerified,
-          canAccessVerifiedFeatures: user.emailVerified,
+          canAccessVerifiedFeatures,
         });
       } else {
         const hadAuthenticatedSession = get().user !== null || get().profile !== null;
@@ -57,7 +69,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
     });
-    return unsub;
+
+    return () => {
+      authSnapshotVersion += 1;
+      unsub();
+    };
   },
 
   signIn: async (email, password) => {
@@ -105,14 +121,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return false;
     }
 
+    const canAccessVerifiedFeatures = await AuthService.getVerifiedFeatureAccess(refreshedUser, {
+      forceRefresh: true,
+    });
+
     set((current) => ({
       user: refreshedUser,
       profile: current.profile,
       isEmailVerified: refreshedUser.emailVerified,
-      canAccessVerifiedFeatures: refreshedUser.emailVerified,
+      canAccessVerifiedFeatures,
     }));
 
-    return refreshedUser.emailVerified;
+    return canAccessVerifiedFeatures;
   },
 
   updateProfileInterests: async (interests) => {
