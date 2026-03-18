@@ -14,7 +14,10 @@ import { deleteField, doc, getDoc, setDoc, serverTimestamp, updateDoc } from "fi
 import { auth, db } from "./firebase";
 import type { AuthResult, UserProfile } from "../types/auth";
 import type { CustomTheme, ThemePreference } from "../types/theme";
-import { normalizeCustomThemes, sanitizeActiveCustomThemeId } from "./theme.service";
+import {
+  normalizeCustomThemes,
+  sanitizeActiveCustomThemeId,
+} from "./theme.service";
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -92,7 +95,9 @@ async function sendVerificationEmailToUser(user: User): Promise<void> {
   try {
     await user.reload();
     await user.getIdToken(true);
-    await sendEmailVerification(user);
+    await sendEmailVerification(user, {
+      url: `${window.location.origin}/verify-email?verified=1`,
+    });
   } catch (error) {
     throw new Error(getAuthErrorMessage(error));
   }

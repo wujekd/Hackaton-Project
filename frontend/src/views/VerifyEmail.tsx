@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../stores/auth.store";
 import { resolveRedirectTarget } from "../utils/auth";
@@ -7,6 +7,7 @@ export default function VerifyEmail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTarget = resolveRedirectTarget(searchParams.get("redirect"), "/");
+  const returnedFromVerification = searchParams.get("verified") === "1";
   const {
     user,
     loading,
@@ -20,6 +21,56 @@ export default function VerifyEmail() {
   const [resending, setResending] = useState(false);
   const [checking, setChecking] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const autoRefreshTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      !returnedFromVerification ||
+      loading ||
+      !user ||
+      isEmailVerified ||
+      autoRefreshTriggeredRef.current
+    ) {
+      return;
+    }
+
+    autoRefreshTriggeredRef.current = true;
+    let cancelled = false;
+
+    const refresh = async () => {
+      setError(null);
+      setNotice(null);
+      setChecking(true);
+
+      try {
+        const verified = await refreshVerificationStatus();
+        if (cancelled) {
+          return;
+        }
+
+        if (verified) {
+          navigate(redirectTarget, { replace: true });
+          return;
+        }
+
+        setNotice("Your email is still unverified. Finish the link in your inbox, then try again.");
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to refresh verification status.");
+        }
+      } finally {
+        if (!cancelled) {
+          setChecking(false);
+        }
+      }
+    };
+
+    void refresh();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEmailVerified, loading, navigate, redirectTarget, refreshVerificationStatus, returnedFromVerification, user]);
 
   if (loading) {
     return (

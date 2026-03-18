@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { AdminService } from "../services/admin.service";
 import {
   CollaborationService,
   type CollaborationCursor,
@@ -16,7 +17,7 @@ import type { PollSummary } from "../types/poll";
 import { formatDateShort, formatDateTime } from "../utils/date";
 import { getCollaborationCoverImageUrl } from "../utils/collaboration";
 
-type ModerationTab = "events" | "polls" | "collabs" | "feedback";
+type ModerationTab = "events" | "polls" | "collabs" | "feedback" | "users";
 type FeedbackFilterTab = "unaddressed" | "addressed";
 
 const COLLABS_PAGE_SIZE = 20;
@@ -49,6 +50,9 @@ export default function Moderation() {
   const [feedbackFilterTab, setFeedbackFilterTab] = useState<FeedbackFilterTab>("unaddressed");
   const [pendingEventDelete, setPendingEventDelete] = useState<EventItem | null>(null);
   const [pendingFeedbackDelete, setPendingFeedbackDelete] = useState<FeedbackEntry | null>(null);
+  const [userToDelete, setUserToDelete] = useState("");
+  const [userDeleteResult, setUserDeleteResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [pendingUserDelete, setPendingUserDelete] = useState<string | null>(null);
 
   const isAdmin = profile?.admin === true;
 
@@ -301,6 +305,30 @@ export default function Moderation() {
     }
   };
 
+  const confirmDeleteUser = async () => {
+    if (!pendingUserDelete) return;
+
+    setActing("user:delete");
+    setUserDeleteResult(null);
+
+    try {
+      const result = await AdminService.deleteUser(pendingUserDelete);
+      setUserDeleteResult({
+        success: true,
+        message: `User ${result.deletedUid} successfully deleted. ${result.note || ""}`
+      });
+      setUserToDelete("");
+    } catch (err: unknown) {
+      setUserDeleteResult({
+        success: false,
+        message: err instanceof Error ? err.message : "Failed to delete user."
+      });
+    } finally {
+      setActing(null);
+      setPendingUserDelete(null);
+    }
+  };
+
   const visibleFeedback = feedbackItems.filter((item) =>
     feedbackFilterTab === "addressed" ? item.addressed : !item.addressed,
   );
@@ -319,6 +347,15 @@ export default function Moderation() {
         busy={pendingEventDelete ? acting === `event:${pendingEventDelete.id}` : false}
         onCancel={() => setPendingEventDelete(null)}
         onConfirm={() => void confirmDeleteEvent()}
+      />
+      <ConfirmDialog
+        isOpen={pendingUserDelete !== null}
+        title="Delete User permanently?"
+        message={`Are you sure you want to delete ${pendingUserDelete}? This action is irreversible, and removes their login access and profile data forever.`}
+        confirmLabel={acting === "user:delete" ? "Deleting..." : "Permanently Delete"}
+        busy={acting === "user:delete"}
+        onCancel={() => setPendingUserDelete(null)}
+        onConfirm={() => void confirmDeleteUser()}
       />
       <ConfirmDialog
         isOpen={pendingFeedbackDelete !== null}
@@ -363,6 +400,13 @@ export default function Moderation() {
           onClick={() => setActiveTab("feedback")}
         >
           Feedback
+        </button>
+        <button
+          className={`filter-pill ${activeTab === "users" ? "active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("users")}
+        >
+          Users
         </button>
       </div>
 
@@ -660,6 +704,55 @@ export default function Moderation() {
               </div>
             </article>
           ))}
+        </div></div>
+      )}
+
+      {activeTab === "users" && (
+        <div className="tab-fade-enter" key="users"><div className="mod-list">
+          <h2 className="event-title">User Management</h2>
+
+          <div className="form-card" style={{ maxWidth: 600 }}>
+            <h3 style={{ marginBottom: 16 }}>Delete User Account</h3>
+            <p style={{ color: "var(--theme-surface-text-dim)", marginBottom: 20 }}>
+              Permanently delete a user account from the system. This will wipe their login capability and main
+              profile, but will not delete the events, collaborations, or messages they previously authored.
+            </p>
+
+            <div className="form-group">
+              <label htmlFor="user-to-delete">User ID, Email, or Username</label>
+              <input
+                id="user-to-delete"
+                value={userToDelete}
+                onChange={(e) => setUserToDelete(e.target.value)}
+                placeholder="e.g. john@example.com, john_doe, or Firebase UID"
+                disabled={acting === "user:delete"}
+              />
+            </div>
+
+            {userDeleteResult && (
+              <div
+                className={userDeleteResult.success ? "auth-notice" : "auth-error"}
+                style={{
+                  marginBottom: 16,
+                  backgroundColor: userDeleteResult.success ? "rgba(16, 185, 129, 0.1)" : undefined,
+                  color: userDeleteResult.success ? "var(--theme-success, #10b981)" : undefined,
+                  borderColor: userDeleteResult.success ? "rgba(16, 185, 129, 0.2)" : undefined
+                }}
+              >
+                {userDeleteResult.message}
+              </div>
+            )}
+
+            <button
+              className="btn-reject"
+              type="button"
+              disabled={!userToDelete.trim() || acting === "user:delete"}
+              onClick={() => setPendingUserDelete(userToDelete.trim())}
+              style={{ padding: "10px 20px" }}
+            >
+              Delete User
+            </button>
+          </div>
         </div></div>
       )}
     </div>

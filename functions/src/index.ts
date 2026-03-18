@@ -1,4 +1,5 @@
 import {initializeApp} from "firebase-admin/app";
+import {getAuth} from "firebase-admin/auth";
 import {
   FieldValue,
   getFirestore,
@@ -161,7 +162,7 @@ const toIso = (value: unknown): string | null => {
   if (value instanceof Date) return value.toISOString();
 
   if (typeof value === "object" && value !== null && "toDate" in value) {
-    const candidate = value as {toDate: () => Date};
+    const candidate = value as { toDate: () => Date };
     return candidate.toDate().toISOString();
   }
 
@@ -1256,4 +1257,93 @@ export const deleteEvent = onCall({
     status: "ok",
     deletedSignupCount,
   };
+});
+
+type AdminDeleteUserPayload = {
+  identifier: string; // The uid, email, or username to search for
+};
+
+export const adminDeleteUser = onCall({
+  region: "europe-west1",
+  cors: true,
+  invoker: "public",
+}, async (request) => {
+  const callerUid = assertVerifiedAuth(request);
+  await assertAdmin(callerUid);
+
+  const data = request.data as AdminDeleteUserPayload;
+  const identifier = asNonEmptyString(
+    data.identifier,
+    "identifier",
+    180,
+  ).trim();
+
+  // Try to find the user in Firestore first (by UID, email, or username)
+  const usersRef = db.collection("users");
+
+  // Strategy 1: Check if identifier is an exact UID match
+  let targetDoc = await usersRef.doc(identifier).get();
+
+  // Strategy 2: Check if identifier matches an email
+  if (!targetDoc.exists) {
+    const emailQuery = await usersRef
+      .where("email", "==", identifier.toLowerCase())
+      .limit(1)
+      .get();
+    if (!emailQuery.empty) targetDoc = emailQuery.docs[0];
+  }
+
+  // Strategy 3: Check if identifier matches a username
+  if (!targetDoc.exists) {
+    const usernameQuery = await usersRef
+      .where("username", "==", identifier)
+      .limit(1)
+      .get();
+    if (!usernameQuery.empty) targetDoc = usernameQuery.docs[0];
+  }
+
+  if (!targetDoc.exists) {
+    throw new HttpsError(
+      "not-found",
+      `No user profile found matching: ${identifier}`,
+    );
+  }
+
+  const targetUid = targetDoc.id;
+
+  // Prevent admin from deleting themselves
+  if (targetUid === callerUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "You cannot delete your own admin account.",
+    );
+  }
+
+  try {
+    // 1. Delete from Firebase Auth
+    await getAuth().deleteUser(targetUid);
+
+    // 2. Delete the user profile document
+    await usersRef.doc(targetUid).delete();
+
+    return {
+      status: "ok",
+      deletedUid: targetUid,
+    };
+  } catch (error) {
+    console.error(`Error deleting user ${targetUid}:`, error);
+
+    const code = (error as { code?: string })?.code;
+    if (code === "auth/user-not-found") {
+      await usersRef.doc(targetUid).delete();
+      return {
+        status: "ok",
+        deletedUid: targetUid,
+        note: "Auth account did not exist, but profile document was " +
+          "successfully cleaned up.",
+      };
+    }
+
+    throw new HttpsError("internal", "Failed to delete user account.");
+  }
 });
