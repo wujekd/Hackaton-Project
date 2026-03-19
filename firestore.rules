@@ -41,7 +41,7 @@ service cloud.firestore {
       allow update: if signedIn() &&
         request.auth.uid == userId &&
         request.resource.data.uid == userId &&
-        !(request.resource.data.diff(resource.data).changedKeys().hasAny(["admin"]));
+        !(request.resource.data.diff(resource.data).affectedKeys().hasAny(["admin"]));
       allow delete: if false;
 
       match /timetable/{entryId} {

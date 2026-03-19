@@ -109,7 +109,34 @@ This keeps initialization logic outside route screens.
 - Use strict TypeScript compile in build pipeline.
 - Enforce React hooks and TS lint rules.
 
-## 13) New App Bootstrap Checklist
+## 13) Initial Paint and Performance Pattern
+
+- Keep the first paint path intentionally small:
+  - render a lightweight branded HTML boot shell in `index.html`,
+  - avoid mounting non-critical imperative systems at the root if they are not needed for first paint.
+- Use lazy route loading for heavier screens and prefetch likely next routes during idle time.
+- Split large dependency groups into stable build chunks (for example React/runtime, Firebase/backend SDKs, state libraries).
+- Defer secondary systems rather than primary content:
+  - load dashboard/content first,
+  - start audio/imperative engines shortly after first paint or on interaction,
+  - keep dedicated playback routes eager where audio is essential to correctness.
+- For dashboard-style pages, prefer sidecar bootstrapping for non-visual systems so visible lists and panels do not remount when a deferred subsystem comes online.
+- Gate prefetch work behind simple readiness flags:
+  - auth settled,
+  - primary data loaded,
+  - required engine available (only when truly needed),
+  - connection is not obviously constrained.
+- Scale prefetch intensity by connection quality or `saveData`:
+  - fetch fewer candidates on slower links,
+  - skip aggressive media warmup on constrained connections.
+- Use perceived-performance helpers that do not distort layout:
+  - static boot shell,
+  - short content fade-in,
+  - stable placeholders that are replaced once, not repeatedly.
+- Avoid mount-time animation resets on live data widgets (for example progress bars) when replacing placeholders; initialize to the current value and animate only subsequent updates.
+- When navigating between related views, reuse already-loaded store data before showing loading spinners again.
+
+## 14) New App Bootstrap Checklist
 
 1. Create folder structure above.
 2. Set up router with layout route, guard wrappers, and route metadata.
